@@ -1,0 +1,17 @@
+/home/cheo/code/godot/data-driven/.godot/mono/temp/obj/Debug/DataDriven.csproj.AssemblyReference.cache
+/home/cheo/code/godot/data-driven/.godot/mono/temp/obj/Debug/DataDriven.GeneratedMSBuildEditorConfig.editorconfig
+/home/cheo/code/godot/data-driven/.godot/mono/temp/obj/Debug/DataDriven.AssemblyInfoInputs.cache
+/home/cheo/code/godot/data-driven/.godot/mono/temp/obj/Debug/DataDriven.AssemblyInfo.cs
+/home/cheo/code/godot/data-driven/.godot/mono/temp/obj/Debug/DataDriven.csproj.CoreCompileInputs.cache
+/home/cheo/code/godot/data-driven/.godot/mono/temp/bin/Debug/DataDriven.deps.json
+/home/cheo/code/godot/data-driven/.godot/mono/temp/bin/Debug/DataDriven.runtimeconfig.json
+/home/cheo/code/godot/data-driven/.godot/mono/temp/bin/Debug/DataDriven.dll
+/home/cheo/code/godot/data-driven/.godot/mono/temp/bin/Debug/DataDriven.pdb
+/home/cheo/code/godot/data-driven/.godot/mono/temp/bin/Debug/GodotSharp.dll
+/home/cheo/code/godot/data-driven/.godot/mono/temp/bin/Debug/GodotSharpEditor.dll
+/home/cheo/code/godot/data-driven/.godot/mono/temp/obj/Debug/DataDriven.csproj.Up2Date
+/home/cheo/code/godot/data-driven/.godot/mono/temp/obj/Debug/DataDriven.dll
+/home/cheo/code/godot/data-driven/.godot/mono/temp/obj/Debug/refint/DataDriven.dll
+/home/cheo/code/godot/data-driven/.godot/mono/temp/obj/Debug/DataDriven.pdb
+/home/cheo/code/godot/data-driven/.godot/mono/temp/obj/Debug/DataDriven.genruntimeconfig.cache
+/home/cheo/code/godot/data-driven/.godot/mono/temp/obj/Debug/ref/DataDriven.dll
