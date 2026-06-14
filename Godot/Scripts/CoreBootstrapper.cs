@@ -64,7 +64,7 @@ public partial class CoreBootstrapper : Node
 		private ItemData[] LoadItemDatabaseFromManifest(Manifest manifest, string dataPath)
 {
     // Initialize with a size large enough to hold the largest ID
-    var masterArray = new ItemData[1024]; 
+    var masterArray = new ItemData[EngineConfig.MaxItemCapacity]; 
 
     foreach (var modulePath in manifest.ConfigModules)
     {
