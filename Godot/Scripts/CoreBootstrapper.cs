@@ -1,7 +1,11 @@
 using Source.Core;
 using Source.Engine;
 using Source.Core.Interfaces;
+using Source.Core.Commands; // Ensure this is imported for CommandType
 using System.IO;
+using System.Text.Json;
+using System.Collections.Generic;
+using System.Linq;
 using Godot;
 
 namespace DataDriven.Scripts;
@@ -12,31 +16,32 @@ public partial class CoreBootstrapper : Node
 
     public override void _Ready()
     {
-        // Wiring the bridge: Inject the Godot implementation into the agnostic Source class
-        DebugLog.Initialize(new GodotLogger());
-				// DebugLog.SetEnabled(false);  // Uncomment to disable
-
         GD.Print("--- BOOTSTRAPPER READY ---");
-        
+
+        // 1. Initialize Logging (The Bridge)
+        DebugLog.Initialize(new GodotLogger());
+
         try
         {
-            // 2. Setup Services
-            GD.Print("CoreBootstrapper: Setting up services...");
-            var itemDatabase = new ItemData[EngineConfig.MaxEntityCapacity];
-            var service = new GodotService(GetViewport());
-            EngineFacade.Implementation = service;
-
-            // 3. Resolve Data Paths
+            // 2. Resolve Data Paths
             string dataPath = ResolveDataPath();
             GD.Print($"[DEBUG] Initializing Engine with Data Path: {dataPath}");
 
-            // 4. Initialize Engine
+            // 3. Load Manifest and Item Database (FIXED: Populating the DB)
+            string manifestPath = Path.Combine(dataPath, "manifest.json");
+            var manifest = LoadManifest(manifestPath);
+            var itemDatabase = LoadItemDatabaseFromManifest(manifest, dataPath);
+            GD.Print($"[DEBUG] Loaded {itemDatabase.Length} items from manifest.");
+
+            // 4. Setup Services
+            var service = new GodotService(GetViewport());
+            EngineFacade.Implementation = service;
+
+            // 5. Initialize Engine with populated itemDatabase
             GD.Print("CoreBootstrapper: Attempting to instantiate EngineDriver...");
             _driver = new EngineDriver(service, itemDatabase, dataPath);
-            GD.Print("CoreBootstrapper: EngineDriver instantiated successfully.");
-
-            // 5. Load Data
-            GD.Print("CoreBootstrapper: Attempting to load npc_blueprint.json...");
+            
+            // 6. Load Game Data
             _driver.LoadGameData("npc_blueprint.json");
             
             GD.Print("[SUCCESS] Engine Bootstrapped Successfully.");
@@ -48,10 +53,46 @@ public partial class CoreBootstrapper : Node
         }
     }
 
-    public override void _Process(double delta)
+    // --- Loading Logic ---
+
+    private Manifest LoadManifest(string path)
     {
-        _driver?.Tick((float)delta);
+        string json = File.ReadAllText(path);
+        return JsonSerializer.Deserialize<Manifest>(json) ?? new Manifest(new List<string>());
     }
+
+		private ItemData[] LoadItemDatabaseFromManifest(Manifest manifest, string dataPath)
+{
+    // Initialize with a size large enough to hold the largest ID
+    var masterArray = new ItemData[1024]; 
+
+    foreach (var modulePath in manifest.ConfigModules)
+    {
+        if (modulePath.StartsWith("Items/"))
+        {
+            string fullPath = Path.Combine(dataPath, modulePath);
+            if (File.Exists(fullPath))
+            {
+                var db = JsonSerializer.Deserialize<Dictionary<int, ItemData>>(File.ReadAllText(fullPath));
+                
+                if (db != null)
+                {
+                    foreach (var kvp in db) 
+                    {
+                        // Map the Item ID directly to the Array Index
+                        masterArray[kvp.Key] = kvp.Value; 
+                    }
+                }
+            }
+        }
+    }
+    return masterArray;
+}
+
+
+    // --- Standard Godot Methods ---
+
+    public override void _Process(double delta) => _driver?.Tick((float)delta);
 
     private string ResolveDataPath()
     {
@@ -60,3 +101,6 @@ public partial class CoreBootstrapper : Node
         return Path.Combine(repoRoot, "Source", "Data");
     }
 }
+
+// Data structures for manifest loading
+public record Manifest(List<string> ConfigModules);

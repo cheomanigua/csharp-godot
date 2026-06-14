@@ -1,4 +1,6 @@
 .
+├── cat
+├── clean.sh
 ├── Godot
 │   ├── DataDriven.csproj
 │   ├── DataDriven.sln
@@ -10,12 +12,12 @@
 │   └── Scripts
 │       ├── CoreBootstrapper.cs
 │       ├── CoreBootstrapper.cs.uid
+│       ├── GodotLogger.cs
+│       ├── GodotLogger.cs.uid
 │       ├── GodotService.cs
 │       └── GodotService.cs.uid
+├── rebuild.sh
 ├── Source
-│   ├── bin
-│   │   └── Debug
-│   │       └── net9.0
 │   ├── Core
 │   │   ├── Commands
 │   │   │   ├── CommandQueue.cs
@@ -30,7 +32,8 @@
 │   │   ├── GameViewAdapter.cs
 │   │   ├── Interfaces
 │   │   │   ├── IEngineFacade.cs
-│   │   │   └── IGameView.cs
+│   │   │   ├── IGameView.cs
+│   │   │   └── ILogger.cs
 │   │   ├── Math
 │   │   │   └── Transform2D.cs
 │   │   ├── StatType.cs
@@ -59,6 +62,7 @@
 │   │   ├── Model.cs
 │   │   ├── MovementBuffers.cs
 │   │   └── NPCBlueprintDto.cs
+│   ├── Source.csproj
 │   └── Systems
 │       ├── Combat
 │       │   └── CombatSystem.cs
@@ -69,5 +73,7 @@
 │       ├── MovementSystem.cs
 │       └── View
 │           └── RenderSystem.cs
+├── tree.txt
+└── troubleshoot.txt
 
-28 directories, 61 files
+20 directories, 57 files
