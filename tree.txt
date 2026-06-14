@@ -1,0 +1,73 @@
+.
+├── Godot
+│   ├── DataDriven.csproj
+│   ├── DataDriven.sln
+│   ├── icon.svg
+│   ├── icon.svg.import
+│   ├── project.godot
+│   ├── Scenes
+│   │   └── Main.tscn
+│   └── Scripts
+│       ├── CoreBootstrapper.cs
+│       ├── CoreBootstrapper.cs.uid
+│       ├── GodotService.cs
+│       └── GodotService.cs.uid
+├── Source
+│   ├── bin
+│   │   └── Debug
+│   │       └── net9.0
+│   ├── Core
+│   │   ├── Commands
+│   │   │   ├── CommandQueue.cs
+│   │   │   └── GameCommand.cs
+│   │   ├── Components.cs
+│   │   ├── ConsoleGameView.cs
+│   │   ├── Contracts
+│   │   │   └── CharacterSheetDto.cs
+│   │   ├── DebugLog.cs
+│   │   ├── EntitySieve.cs
+│   │   ├── FormulaProcessor.cs
+│   │   ├── GameViewAdapter.cs
+│   │   ├── Interfaces
+│   │   │   ├── IEngineFacade.cs
+│   │   │   └── IGameView.cs
+│   │   ├── Math
+│   │   │   └── Transform2D.cs
+│   │   ├── StatType.cs
+│   │   └── TagGrid.cs
+│   ├── Data
+│   │   ├── Character
+│   │   │   ├── classes.json
+│   │   │   ├── races.json
+│   │   │   └── skills.json
+│   │   ├── Items
+│   │   │   ├── accessories.json
+│   │   │   ├── armor.json
+│   │   │   ├── potions.json
+│   │   │   ├── scrolls.json
+│   │   │   └── weapons.json
+│   │   ├── manifest.json
+│   │   ├── npc_blueprint.json
+│   │   └── System
+│   │       ├── action_mappings.json
+│   │       └── formulas.json
+│   ├── Engine
+│   │   ├── Controller.cs
+│   │   ├── EngineDriver.cs
+│   │   ├── EntityRegistry.cs
+│   │   ├── MetadataRegistry.cs
+│   │   ├── Model.cs
+│   │   ├── MovementBuffers.cs
+│   │   └── NPCBlueprintDto.cs
+│   └── Systems
+│       ├── Combat
+│       │   └── CombatSystem.cs
+│       ├── Initialization
+│       │   └── StatInitializationSystem.cs
+│       ├── Inventory
+│       │   └── EquipmentSystem.cs
+│       ├── MovementSystem.cs
+│       └── View
+│           └── RenderSystem.cs
+
+28 directories, 61 files

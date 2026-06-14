@@ -1,0 +1,4 @@
+  Source failed with 2 error(s) (0.2s)
+    /home/cheo/code/godot/data-driven/Source/Engine/Controller.cs(15,29): error CS0246: The type or namespace name 'MetadataComponent' could not be found (are you missing a using directive or an assembly reference?)
+    /home/cheo/code/godot/data-driven/Source/Engine/Controller.cs(10,26): error CS0246: The type or namespace name 'MetadataComponent' could not be found (are you missing a using directive or an assembly reference?)
+
