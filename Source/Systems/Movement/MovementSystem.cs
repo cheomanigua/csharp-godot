@@ -2,7 +2,7 @@ using System;
 using System.Numerics;
 using Source.Core.Math;
 
-namespace Source.Systems;
+namespace Source.Systems.Movement;
 
 public static class MovementSystem
 {

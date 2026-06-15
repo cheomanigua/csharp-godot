@@ -1,6 +1,6 @@
 .
-├── cat
 ├── clean.sh
+├── deletebinlog.sh
 ├── Godot
 │   ├── DataDriven.csproj
 │   ├── DataDriven.sln
@@ -62,18 +62,21 @@
 │   │   ├── Model.cs
 │   │   ├── MovementBuffers.cs
 │   │   └── NPCBlueprintDto.cs
+│   ├── Program.cs
+│   ├── restart.sh
 │   ├── Source.csproj
 │   └── Systems
 │       ├── Combat
 │       │   └── CombatSystem.cs
-│       ├── Initialization
-│       │   └── StatInitializationSystem.cs
 │       ├── Inventory
 │       │   └── EquipmentSystem.cs
-│       ├── MovementSystem.cs
+│       ├── Lifecycle
+│       │   └── StatsUpdateSystem.cs
+│       ├── Movement
+│       │   └── MovementSystem.cs
 │       └── View
 │           └── RenderSystem.cs
 ├── tree.txt
 └── troubleshoot.txt
 
-20 directories, 57 files
+21 directories, 59 files

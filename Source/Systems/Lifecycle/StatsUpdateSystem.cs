@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using Source.Core;
 using Source.Engine;
 
-namespace Source.Systems.Initialization;
+namespace Source.Systems.Lifecycle;
 
-public class StatInitializationSystem
+public class StatsUpdateSystem
 {
     public unsafe void Update(EntityRegistry registry, CommandQueue queue, NPCBlueprintDto bp, 
                    IReadOnlyDictionary<string, ClassData> classes, 

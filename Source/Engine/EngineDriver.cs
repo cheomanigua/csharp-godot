@@ -1,7 +1,7 @@
-using Source.Systems;
+using Source.Systems.Movement;
 using Source.Systems.Inventory;
 using Source.Systems.View;
-using Source.Systems.Initialization;
+using Source.Systems.Lifecycle;
 using Source.Core;
 using Source.Core.Interfaces;
 using Source.Core.Commands;
@@ -19,7 +19,7 @@ public class EngineDriver
     private readonly CommandQueue _queue = new();
     private readonly Controller _controller;
     private readonly RenderSystem _renderSystem;
-    private readonly StatInitializationSystem _initSystem = new();
+    private readonly StatsUpdateSystem _updateSystem = new();
     private readonly string _dataDirectory;
 
     private readonly MovementBuffers _moveBuffers = new();
@@ -70,7 +70,7 @@ public class EngineDriver
             {
                 var bp = _controller.Blueprints.FirstOrDefault(b => b.EntityId == cmd.EntityId);
                 if (bp != null)
-                    _initSystem.Update(_registry, _queue, bp, _controller.Classes, _controller.Races);
+                    _updateSystem.Update(_registry, _queue, bp, _controller.Classes, _controller.Races);
             }
             if (cmd.Type == CommandType.EquipItem)
                 _equipmentSystem.Execute(_registry, cmd);
