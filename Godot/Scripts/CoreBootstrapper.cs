@@ -61,10 +61,10 @@ public partial class CoreBootstrapper : Node
         return JsonSerializer.Deserialize<Manifest>(json) ?? new Manifest(new List<string>());
     }
 
-		private ItemData[] LoadItemDatabaseFromManifest(Manifest manifest, string dataPath)
+private ItemData[] LoadItemDatabaseFromManifest(Manifest manifest, string dataPath)
 {
-    // Initialize with a size large enough to hold the largest ID
-    var masterArray = new ItemData[EngineConfig.MaxItemCapacity]; 
+    // 1. Staging area for merging and safety
+    var tempDict = new Dictionary<int, ItemData>();
 
     foreach (var modulePath in manifest.ConfigModules)
     {
@@ -73,22 +73,33 @@ public partial class CoreBootstrapper : Node
             string fullPath = Path.Combine(dataPath, modulePath);
             if (File.Exists(fullPath))
             {
+                // Deserialize into Dictionary
                 var db = JsonSerializer.Deserialize<Dictionary<int, ItemData>>(File.ReadAllText(fullPath));
-                
                 if (db != null)
                 {
-                    foreach (var kvp in db) 
-                    {
-                        // Map the Item ID directly to the Array Index
-                        masterArray[kvp.Key] = kvp.Value; 
-                    }
+                    foreach (var kvp in db) tempDict[kvp.Key] = kvp.Value;
                 }
             }
         }
     }
+
+    // 2. Final conversion with safety bounds checking
+    var masterArray = new ItemData[EngineConfig.MaxItemCapacity]; 
+    foreach (var kvp in tempDict)
+    {
+        if (kvp.Key >= 0 && kvp.Key < masterArray.Length)
+        {
+            masterArray[kvp.Key] = kvp.Value;
+        }
+        else
+        {
+            // You can use DebugLog or GD.PrintErr depending on the class
+            DebugLog.Log($"[WARNING] Item ID {kvp.Key} exceeds MaxItemCapacity!");
+        }
+    }
+
     return masterArray;
 }
-
 
     // --- Standard Godot Methods ---
 
