@@ -81,7 +81,7 @@ public class EngineDriver
 
         // Fixed: Use DebugLog so it prints in Godot's Output panel
         for(int i = 0; i < _moveBuffers.Active.Length; i++) {
-            DebugLog.Log($"Entity {i} Active status: {_moveBuffers.Active[i]}");
+            //DebugLog.Log($"Entity {i} Active status: {_moveBuffers.Active[i]}");
             if (_moveBuffers.Active[i]) {
                 DebugLog.Log($"Entity {i} Position: {_moveBuffers.Transforms[i].Origin}");
                 
