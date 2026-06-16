@@ -10,9 +10,12 @@ public class SpatialGrid
     // Map cell coordinates to a list of Entity IDs
     private readonly Dictionary<long, List<int>> _grid = new();
 
-    // Track keys that were used last frame
+    // Track keys that were used last frame to avoid Dictionary.Clear() overhead
     private readonly List<long> _activeKeys = new(1024);
 
+    /// <summary>
+    /// Clears only the active cells, keeping the Dictionary structure in memory.
+    /// </summary>
     public void Clear()
     {
         // Only iterate over the cells we touched last frame

@@ -36,6 +36,7 @@
 │   │   │   └── ILogger.cs
 │   │   ├── Math
 │   │   │   └── Transform2D.cs
+│   │   ├── SpatialGrid.cs
 │   │   ├── StatType.cs
 │   │   └── TagGrid.cs
 │   ├── Data
@@ -79,4 +80,4 @@
 ├── tree.txt
 └── troubleshoot.txt
 
-21 directories, 59 files
+21 directories, 60 files

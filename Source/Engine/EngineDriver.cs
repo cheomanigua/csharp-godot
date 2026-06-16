@@ -25,6 +25,9 @@ public class EngineDriver
     private readonly MovementBuffers _moveBuffers = new();
     private readonly EquipmentSystem _equipmentSystem = new();
 
+    private readonly SpatialGrid _spatialGrid = new();
+    private readonly List<int> _nearbyBuffer = new(256);
+
     public EngineDriver(IGameView view, ItemData[] itemDatabase, string dataDirectory)
     {
         DebugLog.Log($"Tick running! Movement system updated.");
@@ -86,7 +89,7 @@ public class EngineDriver
 
         }
 
-        MovementSystem.Update(_moveBuffers.Transforms, _moveBuffers.Velocities, _moveBuffers.Speeds, _moveBuffers.Active, deltaTime);
+        MovementSystem.Update(_spatialGrid, _nearbyBuffer, _moveBuffers.Transforms, _moveBuffers.Velocities, _moveBuffers.Speeds, _moveBuffers.Active, deltaTime);
         DebugLog.Log($"Tick running! Movement system updated.");
 
         // Fixed: Use DebugLog so it prints in Godot's Output panel
