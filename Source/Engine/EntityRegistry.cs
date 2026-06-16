@@ -15,6 +15,8 @@ public class EntityRegistry
 	private readonly TagGrid _tagGrid = new(EngineConfig.MaxEntities);
 	private readonly int[] _activeEntities = new int[EngineConfig.MaxEntities];
 	private int _activeCount = 0;
+	public int[] InternalActiveEntities => _activeEntities;
+	public int InternalActiveCount => _activeCount;
 
 	public EntityRegistry(ItemData[] itemDatabase)
 	{
@@ -35,14 +37,14 @@ public class EntityRegistry
 	/// </summary>
 	public ref EntityHotData GetHotData(int entityId) => ref _hotData[entityId];
 
-	public unsafe void RegisterStats(int entityId, in EntityHotData data)
+	internal unsafe void RegisterStats(int entityId, in EntityHotData data)
 	{
 		_hotData[entityId] = data;
 		_tagGrid.AddComponent(entityId, ComponentMask.Stats);
 		_activeEntities[_activeCount++] = entityId;
 	}
 
-	public unsafe void EquipItem(int entityId, int itemId)
+	internal unsafe void EquipItem(int entityId, int itemId)
 	{
 		if (itemId >= EngineConfig.MaxItemCapacity || _itemDatabase[itemId] == null)
 		{
@@ -54,7 +56,7 @@ public class EntityRegistry
 		data.AddEquippedItem(itemId);
 	}
 
-	public unsafe void ProcessCombat()
+	internal unsafe void ProcessCombat()
 	{
 		for (int i = 0; i < _activeCount; i++)
 		{

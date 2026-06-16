@@ -1,6 +1,7 @@
 using Source.Core;
 using Source.Engine;
 using Source.Core.Interfaces;
+using System;
 
 namespace Source.Systems.View;
 
@@ -15,12 +16,14 @@ public class RenderSystem
         _view = view;
     }
 
-    public void Update(EntityRegistry registry)
+    public void Update(ReadOnlySpan<int> activeEntities, EntityRegistry registry)
     {
-        var entities = registry.GetActiveEntities();
-        foreach (int entityId in entities)
+        // No array allocation happens here!
+        for (int i = 0; i < activeEntities.Length; i++)
         {
+            int entityId = activeEntities[i];
             _adapter.UpdateView(entityId, _view);
         }
     }
+
 }

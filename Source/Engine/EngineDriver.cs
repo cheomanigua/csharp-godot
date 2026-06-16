@@ -100,7 +100,8 @@ public class EngineDriver
         }
 
         _registry.ProcessCombat();
-        _renderSystem.Update(_registry);
+        ReadOnlySpan<int> activeSpan = _registry.InternalActiveEntities.AsSpan(0, _registry.InternalActiveCount);
+        _renderSystem.Update(activeSpan, _registry);
         _queue.Clear();
     }
 }
