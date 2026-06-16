@@ -10,13 +10,23 @@ public class SpatialGrid
     // Map cell coordinates to a list of Entity IDs
     private readonly Dictionary<long, List<int>> _grid = new();
 
+    // Track keys that were used last frame
+    private readonly List<long> _activeKeys = new(1024);
+
     public void Clear()
     {
-        foreach (var list in _grid.Values)
+        // Only iterate over the cells we touched last frame
+        for (int i = 0; i < _activeKeys.Count; i++)
         {
-            list.Clear();
+            if (_grid.TryGetValue(_activeKeys[i], out var list))
+            {
+                list.Clear();
+            }
         }
-        _grid.Clear();
+        
+        // We do NOT call _grid.Clear()! 
+        // This keeps the internal buckets allocated in memory.
+        _activeKeys.Clear();
     }
 
     public void Add(int entityId, Vector2 position)
@@ -26,6 +36,9 @@ public class SpatialGrid
         {
             list = new List<int>();
             _grid[key] = list;
+
+            // New cell found, track it so we know to clear it next frame
+            _activeKeys.Add(key);
         }
         list.Add(entityId);
     }
@@ -34,7 +47,7 @@ public class SpatialGrid
     /// Retrieves entity IDs in the same cell and 8 adjacent cells.
     /// This is the method your MovementSystem will use for collision/separation logic.
     /// </summary>
-    public IEnumerable<int> GetNearbyEntities(Vector2 position)
+    public void GetNearbyEntities(Vector2 position, List<int> resultsBuffer)
     {
         int cellX = (int)(position.X / CellSize);
         int cellY = (int)(position.Y / CellSize);
@@ -46,9 +59,9 @@ public class SpatialGrid
                 long key = GetKeyFromCoords(x, y);
                 if (_grid.TryGetValue(key, out var list))
                 {
-                    foreach (var entityId in list)
+                    for (int i = 0; i < list.Count; i++)
                     {
-                        yield return entityId;
+                        resultsBuffer.Add(list[i]);
                     }
                 }
             }
