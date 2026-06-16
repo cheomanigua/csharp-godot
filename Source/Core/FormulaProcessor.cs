@@ -28,55 +28,58 @@ public static class FormulaProcessor
 	}
 
 	public static unsafe float Execute(string formulaName, in EntityHotData stats, int weaponDmg)
-	{
-		if (!_rawFormulas.TryGetValue(formulaName, out var formula))
-			return weaponDmg;
+  {
+      if (!_rawFormulas.TryGetValue(formulaName, out var formula))
+          return weaponDmg;
+  
+      float result = 0;
+      var operations = formula.Operations; // Reference the list
+      
+      // PERFORMANCE: Convert foreach to for loop
+      for (int i = 0; i < operations.Count; i++)
+      {
+          var op = operations[i];
+          float statValue = 0;
+          if (!string.IsNullOrEmpty(op.Stat) && Enum.TryParse<StatType>(op.Stat, out var type))
+          {
+              statValue = stats.Stats[(int)type];
+          }
+  
+          switch (op.Type)
+          {
+              case "Add": result += statValue + op.Value; break;
+              case "Multiply": result += (statValue * op.Value); break;
+          }
+      }
+      return result + weaponDmg;
+  }
 
-		float result = 0;
-		foreach (var op in formula.Operations)
-		{
-			float statValue = 0;
-			if (!string.IsNullOrEmpty(op.Stat) && Enum.TryParse<StatType>(op.Stat, out var type))
-			{
-				statValue = stats.Stats[(int)type];
-			}
-
-			switch (op.Type)
-			{
-				case "Add": result += statValue + op.Value; break;
-				case "Multiply": result += (statValue * op.Value); break;
-			}
-		}
-		return result + weaponDmg;
-	}
 
 	public static unsafe void ExecuteUpdate(string formulaName, ref EntityHotData stats, FormulaContext ctx)
 	{
-		if (!_rawFormulas.TryGetValue(formulaName, out var formula)) return;
+	    if (!_rawFormulas.TryGetValue(formulaName, out var formula)) return;
 	
-		foreach (var op in formula.Operations)
-		{
-			float inputValue = !string.IsNullOrEmpty(op.Source) 
-				? ResolveSource(op.Source, stats, ctx) 
-				: op.Value;
+	    var operations = formula.Operations;
+	    // PERFORMANCE: Convert foreach to for loop
+	    for (int i = 0; i < operations.Count; i++)
+	    {
+	        var op = operations[i];
+	        float inputValue = !string.IsNullOrEmpty(op.Source) 
+	            ? ResolveSource(op.Source, stats, ctx) 
+	            : op.Value;
 	
-			if (Enum.TryParse<StatType>(op.Target, out var targetType))
-			{
-				switch (op.Type)
-				{
-					case "Add":
-						stats.Stats[(int)targetType] += (int)inputValue;
-						break;
-					case "Multiply":
-						stats.Stats[(int)targetType] *= (int)inputValue;
-						break;
-					case "Set":
-						stats.Stats[(int)targetType] = (int)inputValue;
-						break;
-				}
-			}
-		}
+	        if (Enum.TryParse<StatType>(op.Target, out var targetType))
+	        {
+	            switch (op.Type)
+	            {
+	                case "Add": stats.Stats[(int)targetType] += (int)inputValue; break;
+	                case "Multiply": stats.Stats[(int)targetType] *= (int)inputValue; break;
+	                case "Set": stats.Stats[(int)targetType] = (int)inputValue; break;
+	            }
+	        }
+	    }
 	}
+
 
 	public static unsafe void RecalculateStats(ref EntityHotData stats, FormulaContext ctx)
 	{
