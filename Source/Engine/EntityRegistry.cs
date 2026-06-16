@@ -73,18 +73,21 @@ public class EntityRegistry
 				var item = _itemDatabase[itemId];
 				if (item == null) continue;
 
-				foreach (var comp in item.GrantedComponents)
-				{
-					if (comp.Tag == "AttributeComponent" &&
-						comp.Properties?.TryGetValue("Target", out var target) == true &&
-						comp.Properties.TryGetValue("Value", out var valStr))
-					{
-						if (Enum.TryParse<StatType>(target, out var type))
-						{
-							data.Stats[(int)type] += (int)float.Parse(valStr);
-						}
-					}
-				}
+				var components = item.GrantedComponents;
+        for (int k = 0; k < components.Count; k++)
+        {
+            var comp = components[k];
+            if (comp.Tag == "AttributeComponent" &&
+                comp.Properties?.TryGetValue("Target", out var target) == true &&
+                comp.Properties.TryGetValue("Value", out var valStr))
+            {
+                if (Enum.TryParse<StatType>(target, out var type))
+                {
+                    data.Stats[(int)type] += (int)float.Parse(valStr);
+                }
+            }
+        }
+
 			}
 
 			data.IsDirty = false;
