@@ -29,7 +29,7 @@ public class EngineDriver
     {
         DebugLog.Log($"Tick running! Movement system updated.");
 
-					DebugLog.Log("EngineDriver: Constructor started");
+        DebugLog.Log("EngineDriver: Constructor started");
         _dataDirectory = dataDirectory;
         _registry = new EntityRegistry(itemDatabase);
 
@@ -66,14 +66,24 @@ public class EngineDriver
         while (_queue.HasCommands)
         {
             var cmd = _queue.Dequeue();
-            if (cmd.Type == CommandType.UpdateStats)
+
+            switch (cmd.Type)
             {
-                var bp = _controller.Blueprints.FirstOrDefault(b => b.EntityId == cmd.EntityId);
-                if (bp != null)
-                    _updateSystem.Update(_registry, _queue, bp, _controller.Classes, _controller.Races);
+                case CommandType.Move:
+                    _moveBuffers.Velocities[cmd.EntityId] = new System.Numerics.Vector2(cmd.VelocityX, cmd.VelocityY);
+                    break;
+
+                case CommandType.UpdateStats:
+                    var bp = _controller.Blueprints.FirstOrDefault(b => b.EntityId == cmd.EntityId);
+                    if (bp != null)
+                        _updateSystem.Update(_registry, _queue, bp, _controller.Classes, _controller.Races);
+                    break;
+
+                case CommandType.EquipItem:
+                    _equipmentSystem.Execute(_registry, cmd);
+                    break;
             }
-            if (cmd.Type == CommandType.EquipItem)
-                _equipmentSystem.Execute(_registry, cmd);
+
         }
 
         MovementSystem.Update(_moveBuffers.Transforms, _moveBuffers.Velocities, _moveBuffers.Speeds, _moveBuffers.Active, deltaTime);
