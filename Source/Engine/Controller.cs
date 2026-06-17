@@ -114,10 +114,19 @@ namespace Source.Engine
                 int id = dto.EntityId;
                 if (id >= 0 && id < EngineConfig.MaxEntities)
                 {
-                    _moveBuffers.Active[id] = true;
-                    _moveBuffers.Transforms[id] = new Source.Core.Math.Transform2D(new System.Numerics.Vector2(0, 0), 0);
-                    _moveBuffers.Velocities[id] = new System.Numerics.Vector2(1.0f, 0.5f);
-                    _moveBuffers.Speeds[id] = 15.0f;
+                  _moveBuffers.Active[id] = true;
+                  _moveBuffers.Speeds[id] = 15.0f;
+              
+                  if (id == 1) // Entity 1 spawns at 400, 500 moving RIGHT
+                  {
+                      _moveBuffers.Transforms[id] = new Source.Core.Math.Transform2D(new System.Numerics.Vector2(400f, 500f), 0);
+                      _moveBuffers.Velocities[id] = new System.Numerics.Vector2(1.0f, 0f);
+                  }
+                  else if (id == 2) // Entity 2 spawns at 600, 500 moving LEFT
+                  {
+                      _moveBuffers.Transforms[id] = new Source.Core.Math.Transform2D(new System.Numerics.Vector2(600f, 500f), 0);
+                      _moveBuffers.Velocities[id] = new System.Numerics.Vector2(-1.0f, 0f);
+                  }
                 }
 
                 string skillName = (classData.PrimarySkill != null && _skills.ContainsKey(classData.PrimarySkill)) 

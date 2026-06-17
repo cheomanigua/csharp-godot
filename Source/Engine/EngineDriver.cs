@@ -88,6 +88,19 @@ public class EngineDriver
             }
 
         }
+				
+				// --- NEW: Grid Update Pipeline ---
+    // 1. Clear the grid at the start of the frame
+    _spatialGrid.Clear();
+
+    // 2. Populate the grid with current positions
+    for (int i = 0; i < _moveBuffers.Active.Length; i++)
+    {
+        if (_moveBuffers.Active[i])
+        {
+            _spatialGrid.Add(i, _moveBuffers.Transforms[i].Origin);
+        }
+    }
 
         MovementSystem.Update(_spatialGrid, _nearbyBuffer, _moveBuffers.Transforms, _moveBuffers.Velocities, _moveBuffers.Speeds, _moveBuffers.Active, deltaTime);
         DebugLog.Log($"Tick running! Movement system updated.");
