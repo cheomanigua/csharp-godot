@@ -1,4 +1,6 @@
 using Source.Systems.Movement;
+using Source.Systems.Spatial;
+using Source.Systems.Collision;
 using Source.Systems.Inventory;
 using Source.Systems.View;
 using Source.Systems.Lifecycle;
@@ -86,23 +88,20 @@ public class EngineDriver
                     _equipmentSystem.Execute(_registry, cmd);
                     break;
             }
-
         }
 				
-				// --- NEW: Grid Update Pipeline ---
-    // 1. Clear the grid at the start of the frame
-    _spatialGrid.Clear();
 
-    // 2. Populate the grid with current positions
-    for (int i = 0; i < _moveBuffers.Active.Length; i++)
-    {
-        if (_moveBuffers.Active[i])
-        {
-            _spatialGrid.Add(i, _moveBuffers.Transforms[i].Origin);
-        }
-    }
+        MovementSystem.Update(_moveBuffers.Transforms, _moveBuffers.Velocities, _moveBuffers.Speeds, _moveBuffers.Active, deltaTime);
 
-        MovementSystem.Update(_spatialGrid, _nearbyBuffer, _moveBuffers.Transforms, _moveBuffers.Velocities, _moveBuffers.Speeds, _moveBuffers.Active, deltaTime);
+        SpatialGridSystem.Update(_spatialGrid, _moveBuffers.Transforms, _moveBuffers.Active);
+
+        CollisionSystem.Update(_spatialGrid, _nearbyBuffer, _moveBuffers.Transforms, _moveBuffers.Active);
+
+        _registry.ProcessCombat();
+        ReadOnlySpan<int> activeSpan = _registry.InternalActiveEntities.AsSpan(0, _registry.InternalActiveCount);
+        _renderSystem.Update(activeSpan, _registry);
+        _queue.Clear();
+
         DebugLog.Log($"Tick running! Movement system updated.");
 
         // Fixed: Use DebugLog so it prints in Godot's Output panel
@@ -114,10 +113,5 @@ public class EngineDriver
                 EngineService.DrawMesh(i, _moveBuffers.Transforms[i]);
             }
         }
-
-        _registry.ProcessCombat();
-        ReadOnlySpan<int> activeSpan = _registry.InternalActiveEntities.AsSpan(0, _registry.InternalActiveCount);
-        _renderSystem.Update(activeSpan, _registry);
-        _queue.Clear();
     }
 }
