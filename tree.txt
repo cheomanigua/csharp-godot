@@ -35,6 +35,7 @@
 │   │   │   ├── IGameView.cs
 │   │   │   └── ILogger.cs
 │   │   ├── Math
+│   │   │   ├── CollisionMath.cs
 │   │   │   └── Transform2D.cs
 │   │   ├── SpatialGrid.cs
 │   │   ├── StatType.cs
@@ -67,6 +68,8 @@
 │   ├── restart.sh
 │   ├── Source.csproj
 │   └── Systems
+│       ├── Collision
+│       │   └── CollisionSystem.cs
 │       ├── Combat
 │       │   └── CombatSystem.cs
 │       ├── Inventory
@@ -75,9 +78,11 @@
 │       │   └── StatsUpdateSystem.cs
 │       ├── Movement
 │       │   └── MovementSystem.cs
+│       ├── Spatial
+│       │   └── SpatialGridSystem.cs
 │       └── View
 │           └── RenderSystem.cs
 ├── tree.txt
 └── troubleshoot.txt
 
-21 directories, 60 files
+23 directories, 63 files

@@ -28,7 +28,6 @@ public class EngineDriver
     private readonly EquipmentSystem _equipmentSystem = new();
 
     private readonly SpatialGrid _spatialGrid = new();
-    private readonly List<int> _nearbyBuffer = new(256);
 
     public EngineDriver(IGameView view, ItemData[] itemDatabase, string dataDirectory)
     {
@@ -95,7 +94,7 @@ public class EngineDriver
 
         SpatialGridSystem.Update(_spatialGrid, _moveBuffers.Transforms, _moveBuffers.Active);
 
-        CollisionSystem.Update(_spatialGrid, _nearbyBuffer, _moveBuffers.Transforms, _moveBuffers.Active);
+        CollisionSystem.Update(_spatialGrid, _moveBuffers.Transforms, _moveBuffers.Velocities, deltaTime, _moveBuffers.Active);
 
         _registry.ProcessCombat();
         ReadOnlySpan<int> activeSpan = _registry.InternalActiveEntities.AsSpan(0, _registry.InternalActiveCount);

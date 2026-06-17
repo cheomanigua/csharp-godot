@@ -115,7 +115,7 @@ namespace Source.Engine
                 if (id >= 0 && id < EngineConfig.MaxEntities)
                 {
                   _moveBuffers.Active[id] = true;
-                  _moveBuffers.Speeds[id] = 15.0f;
+                  _moveBuffers.Speeds[id] = 215.0f;
               
                   if (id == 1) // Entity 1 spawns at 400, 500 moving RIGHT
                   {

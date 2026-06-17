@@ -33,8 +33,8 @@ class Program
         engine.AddCommand(new GameCommand { Type = CommandType.UpdateStats, EntityId = 2 });
 
         // 6. Queue equip commands
-        engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = 1, TargetId = 100 });
-        engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = 2, TargetId = 101 });
+        //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = 1, TargetId = 100 });
+        //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = 2, TargetId = 101 });
         //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = 2, TargetId = 300 });
         //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = 2, TargetId = 301 });
 

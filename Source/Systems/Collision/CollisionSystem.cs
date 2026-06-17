@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Buffers;
 using Source.Core;
 using Source.Core.Math;
 
@@ -11,83 +12,58 @@ public static class CollisionSystem
     // Collision radius for each NPC.
     // Adjust to match your sprite size.
     private const float Radius = 16.0f;
-
-    private const float CombinedRadius = Radius * 2.0f;
-    private const float CombinedRadiusSquared = CombinedRadius * CombinedRadius;
+    private const float Diameter = Radius * 2.0f;
+    private const float DiameterSquared = Diameter * Diameter;
 
 		public static void Update(
 			SpatialGrid grid,
-			List<int> nearbyBuffer,
 			Span<Transform2D> transforms,
+			Span<Vector2> velocities,
+			float deltaTime,
 			ReadOnlySpan<bool> activeMask)
 		{
-        // STEP 3 - Collision detection + resolution
-        for (int i = 0; i < transforms.Length; i++)
-        {
-            if (!activeMask[i])
-                continue;
+        // 1. Rent an array from the pool
+        int[] buffer = ArrayPool<int>.Shared.Rent(1024);
+        try
+				{
+					// Create a Span from the rented array to work with it safely
+            Span<int> nearbySpan = buffer.AsSpan();
 
-            nearbyBuffer.Clear();
-
-            grid.GetNearbyEntities(transforms[i].Origin, nearbyBuffer);
-
-            for (int n = 0; n < nearbyBuffer.Count; n++)
+            for (int i = 0; i < transforms.Length; i++)
             {
-                int j = nearbyBuffer[n];
+                if (!activeMask[i]) continue;
 
-                // Ignore self
-                if (j == i)
-                    continue;
+                nearbySpan.Clear();
 
-                // Resolve pair only once
-                if (j <= i)
-                    continue;
+                int count = grid.GetNearbyEntities(transforms[i].Origin, buffer);
 
-                if (!activeMask[j])
-                    continue;
+                for (int n = 0; n < count; n++)
+                {
+                    int j = nearbySpan[n];
 
-                Vector2 posA = transforms[i].Origin;
-                Vector2 posB = transforms[j].Origin;
 
-                Vector2 delta = posB - posA;
+                    // Resolve pair only once
+                    if (j <= i) continue;
 
-                float distanceSquared = delta.LengthSquared();
+                    if (!activeMask[j]) continue;
 
-                // Not colliding
-                if (distanceSquared > CombinedRadiusSquared)
-                    continue;
-
-                ResolveCollision(i, j, transforms, delta, distanceSquared);
+                    Vector2 posA = transforms[i].Origin + velocities[i] * deltaTime;
+                    Vector2 posB = transforms[j].Origin + velocities[j] * deltaTime;
+                    
+                    // If the FUTURE positions overlap, cancel the movement
+                    if (Vector2.DistanceSquared(posA, posB) < DiameterSquared)
+                    {
+                        // Cancel velocity for both
+                        velocities[i] = Vector2.Zero;
+                        velocities[j] = Vector2.Zero;
+                    }
+                }
             }
-        }
+				}
+				finally
+				{
+					// 3. IMPORTANT: Always return the buffer to the pool
+            ArrayPool<int>.Shared.Return(buffer);
+				}
 		}
-
-    private static void ResolveCollision(
-        int idA,
-        int idB,
-        Span<Transform2D> transforms,
-        Vector2 delta,
-        float distanceSquared)
-    {
-        // Avoid divide by zero if two entities
-        // are exactly on the same point.
-        if (distanceSquared < 0.0001f)
-        {
-            delta = new Vector2(1f, 0f);
-            distanceSquared = 1f;
-        }
-
-        float distance = MathF.Sqrt(distanceSquared);
-
-        Vector2 normal = delta / distance;
-
-        float overlap = CombinedRadius - distance;
-
-        // Push each entity half the overlap distance
-        Vector2 correction = normal * (overlap * 0.5f);
-
-        transforms[idA].Origin -= correction;
-        transforms[idB].Origin += correction;
-    }
-
 }
