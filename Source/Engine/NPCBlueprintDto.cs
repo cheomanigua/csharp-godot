@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Source.Engine;
 
 public class NPCBlueprintDto
@@ -7,4 +9,5 @@ public class NPCBlueprintDto
     public required string Race { get; set; }
     public required string Class { get; set; }
     public int EquippedItemId { get; set; }
+    public Vector2 SpawnPosition { get; set; }
 }

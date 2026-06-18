@@ -47,12 +47,14 @@ public class EngineDriver
         _renderSystem = new RenderSystem(adapter, view);
     }
 
-    public void LoadGameData(string fileName) 
+
+    // Change this in EngineDriver.cs
+    public Dictionary<string, int> LoadGameData(string fileName) 
     {
         DebugLog.Log($"[HEARTBEAT] EngineDriver.LoadGameData called for: {fileName}");
         string fullPath = Path.Combine(_dataDirectory, fileName);
-        DebugLog.Log($"[CANARY] EngineDriver attempting to load: {fullPath}");
-        _controller.LoadNPCFromJson(fullPath);
+        
+        return _controller.LoadNPCFromJson(fullPath); 
     }
 
     private void InitializeDataPath(string relativePath, Action<string> loader)
@@ -78,9 +80,13 @@ public class EngineDriver
                     break;
 
                 case CommandType.UpdateStats:
-                    var bp = _controller.Blueprints.FirstOrDefault(b => b.EntityId == cmd.EntityId);
-                    if (bp != null)
-                        _updateSystem.Update(_registry, _queue, bp, _controller.Classes, _controller.Races);
+                    var bp = _controller.GetBlueprintById(cmd.EntityId);
+                    if (bp == null)
+										{
+											DebugLog.Log($"[GHOST PROTECTOR] Ignored UpdateStats for invalid ID: {cmd.EntityId}");
+                      break;
+										}
+                    _updateSystem.Update(_registry, _queue, bp, _controller.Classes, _controller.Races);
                     break;
 
                 case CommandType.EquipItem:

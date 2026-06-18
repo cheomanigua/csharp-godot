@@ -39,6 +39,11 @@ public class EntityRegistry
 
 	internal unsafe void RegisterStats(int entityId, in EntityHotData data)
 	{
+		if (entityId == 0) 
+    {
+        System.Console.WriteLine($"[GHOST TRAP] Ghost entity 0 registered! Stack: {System.Environment.StackTrace}");
+        System.Console.Out.Flush();
+    }
 		_hotData[entityId] = data;
 		_tagGrid.AddComponent(entityId, ComponentMask.Stats);
 		_activeEntities[_activeCount++] = entityId;

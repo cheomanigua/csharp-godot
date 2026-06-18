@@ -25,18 +25,22 @@ class Program
         // Pass "Data" as the dataDirectory argument to match EngineDriver signature
         var engine = new EngineDriver(view, itemDbArray, "Data");
 
-        // 4. Load game data
-        engine.LoadGameData("npc_blueprint.json");
+        // 4. Load game data and capture the name-to-id mapping
+        var spawnedEntities = engine.LoadGameData("npc_blueprint.json");
 
-        // 5. Queue initialization commands
-        engine.AddCommand(new GameCommand { Type = CommandType.UpdateStats, EntityId = 1 });
-        engine.AddCommand(new GameCommand { Type = CommandType.UpdateStats, EntityId = 2 });
+        // Retrieve IDs by name instead of hardcoding "1" and "2"
+        int thrallId = spawnedEntities["Thrall"];
+        int sergioId = spawnedEntities["Sergio"];
 
-        // 6. Queue equip commands
-        //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = 1, TargetId = 100 });
-        //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = 2, TargetId = 101 });
-        //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = 2, TargetId = 300 });
-        //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = 2, TargetId = 301 });
+        // 5. Queue initialization commands using the dynamics IDs
+        engine.AddCommand(new GameCommand { Type = CommandType.UpdateStats, EntityId = thrallId });
+        engine.AddCommand(new GameCommand { Type = CommandType.UpdateStats, EntityId = sergioId });
+
+        // 6. Queue equip commands using dynamic IDs
+        engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = thrallId, TargetId = 100 });
+        engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = sergioId, TargetId = 101 });
+        engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = sergioId, TargetId = 30 });
+        engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = sergioId, TargetId = 31 });
 
         // 7. Game Loop
         bool running = true;

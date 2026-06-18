@@ -1,13 +1,11 @@
 [
   {
-  "EntityId": 1,
   "Name": "Thrall",
   "Race": "Orc",
   "Class": "Warrior",
   "EquippedItemId": 100
   },
   {
-  "EntityId": 2,
   "Name": "Sergio",
   "Race": "Human",
   "Class": "Wizard",
