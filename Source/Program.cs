@@ -37,8 +37,8 @@ class Program
         engine.AddCommand(new GameCommand { Type = CommandType.UpdateStats, EntityId = sergioId });
 
         // 6. Queue equip commands using dynamic IDs
-        engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = thrallId, TargetId = 100 });
-        engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = sergioId, TargetId = 101 });
+        //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = thrallId, TargetId = 100 });
+        //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = sergioId, TargetId = 101 });
         engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = sergioId, TargetId = 30 });
         //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = sergioId, TargetId = 31 });
 

@@ -1,5 +1,5 @@
 {
-  "200": { 
+  "20": { 
     "Name": "Leather Armor", 
     "Categories": { "Type": "Armor", "Execution": "Immediate" },
     "GrantedComponents": [

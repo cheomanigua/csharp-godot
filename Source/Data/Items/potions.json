@@ -1,5 +1,5 @@
 {
-  "400": { 
+  "40": { 
     "Name": "Potion of Healing", 
     "Categories": { "Type": "Potion", "Execution": "Immediate" },
     "GrantedComponents": [
