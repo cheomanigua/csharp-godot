@@ -42,4 +42,15 @@ namespace Source.Engine
 		public const int MaxEntityCapacity = 1024;
 		public const int CellSize = 64;
 	}
+
+	public static class EntityMasks
+  {
+      // These values identify the bit-flags corresponding to your current pointer ranges
+      public const int ITEM_MASK       = 0x000; // 0-255 (No high bits set)
+      public const int NPC_MASK        = 0x100; // 256 (Bit 8 set)
+      public const int PROJECTILE_MASK = 0x200; // 512 (Bit 9 set)
+      
+      // Mask to isolate only the type bits (ignoring the 0-255 index bits)
+      public const int TYPE_MASK       = 0x300; 
+  }
 }

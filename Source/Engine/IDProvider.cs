@@ -3,9 +3,9 @@ namespace Source.Engine;
 public class IDProvider
 {
     // Partitioning by Power of Two ranges
-    private int _itemPointer = 0;           // Range: 0 - 255
-    private int _npcPointer = 256;          // Range: 256 - 511
-    private int _projectilePointer = 512;   // Range: 512 - 1023
+    private int _itemPointer = EntityMasks.ITEM_MASK;               // Range: 0 - 255
+    private int _npcPointer = EntityMasks.NPC_MASK;                 // Range: 256 - 511
+    private int _projectilePointer = EntityMasks.PROJECTILE_MASK;   // Range: 512 - 1023
 
     private const int MaxItemId = 255;
     private const int MaxNpcId = 511;

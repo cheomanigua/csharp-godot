@@ -25,9 +25,13 @@ public class EntityRegistry
 
 	public ItemData? GetItem(int id)
 	{
-		// Safe O(1) array access
+		// 1. Bitwise Type Check: Is this actually an item?
+    if ((id & EntityMasks.TYPE_MASK) != EntityMasks.ITEM_MASK) return null;
+
+		// 2. Bounds Check: Is the ID within our array memory?. Safe O(1) array access
 		if (id >= 0 && id < _itemDatabase.Length)
 			return _itemDatabase[id];
+
 		return null;
 	}
 
