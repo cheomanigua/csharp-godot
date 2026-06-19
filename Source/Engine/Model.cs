@@ -51,6 +51,6 @@ namespace Source.Engine
       public const int PROJECTILE_MASK = 0x200; // 512 (Bit 9 set)
       
       // Mask to isolate only the type bits (ignoring the 0-255 index bits)
-      public const int TYPE_MASK       = 0x300; 
+      public const int TYPE_MASK       = ITEM_MASK | NPC_MASK | PROJECTILE_MASK;
   }
 }
