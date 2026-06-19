@@ -40,7 +40,15 @@ namespace Source.Engine
 		public const int MaxItemCapacity = 1024;
 		public const int MaxEntities = 1024;
 		public const int MaxEntityCapacity = 1024;
-		public const int CellSize = 64;
+
+		// Grid settings
+    public const int CellSize = 64;
+    public const int ScreenWidth = 1920;
+    public const int ScreenHeight = 1080;
+    
+    // Automatically calculate grid dimensions
+    public const int GridWidth = ScreenWidth / CellSize;
+    public const int GridHeight = ScreenHeight / CellSize;
 	}
 
 	public static class EntityMasks

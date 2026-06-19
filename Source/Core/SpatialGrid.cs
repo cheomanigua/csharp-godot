@@ -7,95 +7,64 @@ namespace Source.Core;
 public class SpatialGrid
 {
     private const int CellSize = EngineConfig.CellSize;
-    // Map cell coordinates to a list of Entity IDs
-    private readonly Dictionary<long, List<int>> _grid = new();
+    private const int GridWidth = EngineConfig.GridWidth;
+    private const int GridHeight = EngineConfig.GridHeight;
+    private const int TotalCells = GridWidth * GridHeight;
+    
+    // The flat 1D array replacing the Dictionary
+    private readonly List<int>[] _grid = new List<int>[TotalCells];
 
-    // Track keys that were used last frame to avoid Dictionary.Clear() overhead
-    private readonly List<long> _activeKeys = new(1024);
+    public SpatialGrid()
+    {
+        for (int i = 0; i < TotalCells; i++)
+        {
+            _grid[i] = new List<int>();
+        }
+    }
 
-    /// <summary>
-    /// Clears only the active cells, keeping the Dictionary structure in memory.
-    /// </summary>
     public void Clear()
     {
-        // Only iterate over the cells we touched last frame
-        for (int i = 0; i < _activeKeys.Count; i++)
+        for (int i = 0; i < TotalCells; i++)
         {
-            if (_grid.TryGetValue(_activeKeys[i], out var list))
-            {
-                list.Clear();
-            }
-        }
-        
-        // We do NOT call _grid.Clear()! 
-        // This keeps the internal buckets allocated in memory.
-        _activeKeys.Clear();
-
-        // 2. NEW: Force clean up of the Dictionary if it grows too large
-        // This prevents memory leaks if keys were added incorrectly
-        if (_grid.Count > 1024) 
-        {
-            _grid.Clear();
+            _grid[i].Clear();
         }
     }
 
     public void Add(int entityId, Vector2 position)
     {
-        // Divide position by CellSize FIRST, then hash the resulting integers
-        int ix = (int)(position.X / CellSize);
-        int iy = (int)(position.Y / CellSize);
-        long key = GetKeyFromCoords(ix, iy);
+        int x = (int)(position.X / CellSize);
+        int y = (int)(position.Y / CellSize);
+        DebugLog.Log($"Adding {GetDebugInfo(entityId, position)}");
         
-        DebugLog.Log($"Adding Entity {entityId} to key {key} at {position}");
-        if (!_grid.TryGetValue(key, out var list))
+        if (x >= 0 && x < GridWidth && y >= 0 && y < GridHeight)
         {
-            list = new List<int>();
-            _grid[key] = list;
-
-            // New cell found, track it so we know to clear it next frame
-            _activeKeys.Add(key);
-        }
-        // CRITICAL: Prevent duplicate IDs in the same cell
-        if (!list.Contains(entityId))
-        {
-            list.Add(entityId);
+            int index = x + (y * GridWidth);
+            _grid[index].Add(entityId);
         }
     }
 
-    /// <summary>
-    /// Retrieves entity IDs in the same cell and 8 adjacent cells.
-    /// This is the method your MovementSystem will use for collision/separation logic.
-    /// </summary>
     public int GetNearbyEntities(Vector2 position, Span<int> resultsBuffer)
     {
-        // CRITICAL: Ensure the buffer is blank before filling it
         resultsBuffer.Clear();
-
         int cellX = (int)(position.X / CellSize);
         int cellY = (int)(position.Y / CellSize);
         int foundCount = 0;
     
+        // Check 3x3 grid around the entity
         for (int x = cellX - 1; x <= cellX + 1; x++)
         {
             for (int y = cellY - 1; y <= cellY + 1; y++)
             {
-                long key = GetKeyFromCoords(x, y);
-                if (_grid.TryGetValue(key, out var list))
+                if (x >= 0 && x < GridWidth && y >= 0 && y < GridHeight)
                 {
-                    DebugLog.Log($"Key {key} has {list.Count} entities."); // See if this number is unexpectedly high
+                    int index = x + (y * GridWidth);
+                    var list = _grid[index];
+                    
                     for (int i = 0; i < list.Count; i++)
                     {
-                        // Safety check to prevent buffer overflow
                         if (foundCount < resultsBuffer.Length)
                         {
-                            resultsBuffer[foundCount] = list[i];
-                            foundCount++;
-                        }
-                        else
-                        {
-                            // Optional: Log warning if buffer is too small
-                            DebugLog.Log("WARNING: SpatialGrid buffer overflow! Increase ArrayPool rent size.");
-                            return foundCount;
+                            resultsBuffer[foundCount++] = list[i];
                         }
                     }
                 }
@@ -104,16 +73,10 @@ public class SpatialGrid
         return foundCount;
     }
 
-    private const int GridOffset = 10000; // Choose a value larger than your world size
-
-    private long GetKeyFromCoords(int x, int y) 
+    private string GetDebugInfo(int entityId, Vector2 position)
     {
-        // Shift coordinates into positive space, then hash
-        //uint ux = (uint)(x + GridOffset);
-        //uint uy = (uint)(y + GridOffset);
-        //return ((long)ux << 32) | uy;
-        return (long)(x + GridOffset) * 31337 + (long)(y + GridOffset);
+        int x = (int)(position.X / EngineConfig.CellSize);
+        int y = (int)(position.Y / EngineConfig.CellSize);
+        return $"Entity {entityId} -> Index {x + (y * EngineConfig.GridWidth)} (Cell {x}, {y})";
     }
-    private long GetKey(Vector2 pos) => GetKeyFromCoords((int)(pos.X / CellSize), (int)(pos.Y / CellSize));
-
 }
