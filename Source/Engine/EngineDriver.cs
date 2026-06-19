@@ -9,6 +9,7 @@ using Source.Core.Interfaces;
 using Source.Core.Commands;
 using System;
 using System.Collections.Generic;
+using System.Numerics;
 using System.Linq;
 using System.IO;
 
@@ -19,6 +20,7 @@ public class EngineDriver
     private readonly EntityRegistry _registry; 
     private readonly MetadataRegistry _metaRegistry = new();
     private readonly CommandQueue _queue = new();
+    private readonly IGameView _view;
     private readonly Controller _controller;
     private readonly RenderSystem _renderSystem;
     private readonly StatsUpdateSystem _updateSystem = new();
@@ -31,6 +33,8 @@ public class EngineDriver
 
     public EngineDriver(IGameView view, ItemData[] itemDatabase, string dataDirectory)
     {
+        _view = view;
+
         DebugLog.Log($"Tick running! Movement system updated.");
 
         DebugLog.Log("EngineDriver: Constructor started");
@@ -76,7 +80,9 @@ public class EngineDriver
             switch (cmd.Type)
             {
                 case CommandType.Move:
+                    _moveBuffers.Transforms[cmd.EntityId] = new Source.Core.Math.Transform2D(new Vector2(cmd.PosX, cmd.PosY), 0);
                     _moveBuffers.Velocities[cmd.EntityId] = new System.Numerics.Vector2(cmd.VelocityX, cmd.VelocityY);
+                    _moveBuffers.Speeds[cmd.EntityId] = cmd.Speed;
                     break;
 
                 case CommandType.UpdateStats:
@@ -110,12 +116,23 @@ public class EngineDriver
         DebugLog.Log($"Tick running! Movement system updated.");
 
         // Fixed: Use DebugLog so it prints in Godot's Output panel
-        for(int i = 0; i < _moveBuffers.Active.Length; i++) {
-            //DebugLog.Log($"Entity {i} Active status: {_moveBuffers.Active[i]}");
-            if (_moveBuffers.Active[i]) {
+        // Use the injected _view to handle rendering updates
+        for (int i = 0; i < _moveBuffers.Active.Length; i++) 
+        {
+            if (_moveBuffers.Active[i]) 
+            {
+                // 1. Keep your requested debug log
                 DebugLog.Log($"Entity {i} Position: {_moveBuffers.Transforms[i].Origin}");
                 
-                EngineService.DrawMesh(i, _moveBuffers.Transforms[i]);
+                // 2. Perform the drawing using the injected view via the interface
+                if (_view is IEngineFacade facade) 
+                {
+                    facade.DrawMesh(i, _moveBuffers.Transforms[i]);
+                }
+                else 
+                {
+                    DebugLog.Log($"[ERROR] View does not implement IEngineFacade!");
+                }
             }
         }
     }

@@ -1,11 +1,27 @@
-2. The Logic Fix: The IsDirty Flag
+TODO
 
-You mentioned your stats are 0 for Thrall and Sergio. This is because they aren't being "Dirty"-marked correctly.
+COLLIDER MASK
 
-In Controller.cs, inside SpawnNPC, please ensure you are setting both the ID and the dirty flag before registering:
-C#
+Yes, I remember! We were troubleshooting the physics and interaction logic where two entities were facing each other and moving toward one another.
 
-// Inside SpawnNPC in Controller.cs
-var hotData = new EntityHotData(id);
-hotData.IsDirty = true; // Make sure this is set!
-_registry.RegisterStats(id, in hotData);
+We were specifically looking at how to handle their **collision and movement updates** so that they wouldn't overlap or "jitter" when they met in the middle. As I recall, we were dealing with:
+
+1. **Vector Calculation**: Calculating the direction vector between them (often by subtracting `PositionA - PositionB`) to determine the movement path.
+2. **Normalization**: Ensuring that movement speed was consistent regardless of the distance between them.
+3. **Collision Handling**: Preventing the entities from passing through each other (tunneling) or getting stuck inside one another once they reached the same point.
+
+Since you've been working on integrating your **`EntityMasks`** and **bitwise filtering** logic into your documentation, this is a perfect time to tie it back to the physics system.
+
+Are you looking to apply that `Mask-Based Filtering` we just discussed to this specific physics scenario? For example:
+
+* Using a `COLLIDER_MASK` to identify which entities the physics system should even process?
+* Filtering out `ITEM_MASK` entities so they don't block the movement of `NPC_MASK` entities?
+
+Let me know if you want to look at the code for that movement loop again, or if you're trying to add a section about "Collision Filtering" to your `enums_flags.md` documentation!
+
+
+DOUBTS
+
+1. I see that you use Velocity as direction. Should we change Velocity for Direction? Or direction is more related to where you are facing rather to where you are moving?
+2. Do the initial position of cmd.Type == CommandType.Move is only processed once at start up?
+

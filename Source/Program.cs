@@ -1,6 +1,7 @@
 using Source.Core;
 using Source.Core.Commands;
 using Source.Engine;
+using Source.Tests;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
@@ -10,6 +11,8 @@ class Program
 {
     static void Main(string[] args)
     {
+        new CollisionTest().RunCollisionSimulation();
+
         // 0. Initialize the Processor
         FormulaProcessor.Initialize("Data/System/formulas.json");
         
@@ -41,6 +44,25 @@ class Program
         //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = sergioId, TargetId = 101 });
         //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = sergioId, TargetId = 30 });
         //engine.AddCommand(new GameCommand { Type = CommandType.EquipItem, EntityId = sergioId, TargetId = 31 });
+
+        // --- ADD THIS TO GIVE THEM MOVEMENT ---
+// Give Thrall velocity <1, 0> (Moving Right)
+engine.AddCommand(new GameCommand { 
+    Type = CommandType.Move, 
+    EntityId = thrallId, 
+    VelocityX = 1.0f, 
+    VelocityY = 0.0f,
+		Speed = 100.0f
+});
+
+// Give Sergio velocity <-1, 0> (Moving Left)
+engine.AddCommand(new GameCommand { 
+    Type = CommandType.Move, 
+    EntityId = sergioId, 
+    VelocityX = -1.0f, 
+    VelocityY = 0.0f,
+		Speed = 100.0f
+});
 
         // 7. Game Loop
         bool running = true;

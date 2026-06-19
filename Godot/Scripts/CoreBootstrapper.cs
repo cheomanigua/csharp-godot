@@ -1,7 +1,7 @@
 using Source.Core;
 using Source.Engine;
 using Source.Core.Interfaces;
-using Source.Core.Commands; // Ensure this is imported for CommandType
+using Source.Core.Commands; 
 using System.IO;
 using System.Text.Json;
 using System.Collections.Generic;
@@ -18,7 +18,7 @@ public partial class CoreBootstrapper : Node
     {
         GD.Print("--- BOOTSTRAPPER READY ---");
 
-        // 1. Initialize Logging (The Bridge)
+        // 1. Initialize Logging
         DebugLog.Initialize(new GodotLogger());
 
         try
@@ -27,24 +27,45 @@ public partial class CoreBootstrapper : Node
             string dataPath = ResolveDataPath();
             GD.Print($"[DEBUG] Initializing Engine with Data Path: {dataPath}");
 
-            // 3. Load Manifest and Item Database (FIXED: Populating the DB)
+            // 3. Setup Items
             string manifestPath = Path.Combine(dataPath, "manifest.json");
             var manifest = LoadManifest(manifestPath);
             var itemDatabase = LoadItemDatabaseFromManifest(manifest, dataPath);
-            GD.Print($"[DEBUG] Loaded {itemDatabase.Length} items from manifest.");
 
             // 4. Setup Services
             var service = new GodotService(GetViewport());
             EngineFacade.Implementation = service;
 
-            // 5. Initialize Engine with populated itemDatabase
-            GD.Print("CoreBootstrapper: Attempting to instantiate EngineDriver...");
+            // 5. Initialize Engine
             _driver = new EngineDriver(service, itemDatabase, dataPath);
             
-            // 6. Load Game Data
-            _driver.LoadGameData("npc_blueprint.json");
+            // 6. Load Game Data and capture the mapping of Name -> EntityId
+            var entityMap = _driver.LoadGameData("npc_blueprint.json");
             
-            GD.Print("[SUCCESS] Engine Bootstrapped Successfully.");
+            // 7. Manually assign commands using dynamic IDs to match Program.cs simulation
+            if (entityMap.TryGetValue("Thrall", out int thrallId))
+            {
+                _driver.AddCommand(new GameCommand { 
+                    Type = CommandType.Move, 
+                    EntityId = thrallId, 
+                    PosX = 300.0f, PosY = 300.0f,
+                    VelocityX = 1.0f, VelocityY = 0.0f, 
+                    Speed = 100.0f 
+                });
+            }
+
+            if (entityMap.TryGetValue("Sergio", out int sergioId))
+            {
+                _driver.AddCommand(new GameCommand { 
+                    Type = CommandType.Move, 
+                    EntityId = sergioId, 
+                    PosX = 500.0f, PosY = 300.0f,
+                    VelocityX = -1.0f, VelocityY = 0.0f, 
+                    Speed = 100.0f 
+                });
+            }
+            
+            GD.Print("[SUCCESS] Engine Bootstrapped Successfully with Movement Commands.");
         }
         catch (System.Exception e)
         {
@@ -61,47 +82,35 @@ public partial class CoreBootstrapper : Node
         return JsonSerializer.Deserialize<Manifest>(json) ?? new Manifest(new List<string>());
     }
 
-private ItemData[] LoadItemDatabaseFromManifest(Manifest manifest, string dataPath)
-{
-    // 1. Staging area for merging and safety
-    var tempDict = new Dictionary<int, ItemData>();
-
-    foreach (var modulePath in manifest.ConfigModules)
+    private ItemData[] LoadItemDatabaseFromManifest(Manifest manifest, string dataPath)
     {
-        if (modulePath.StartsWith("Items/"))
+        var tempDict = new Dictionary<int, ItemData>();
+        foreach (var modulePath in manifest.ConfigModules)
         {
-            string fullPath = Path.Combine(dataPath, modulePath);
-            if (File.Exists(fullPath))
+            if (modulePath.StartsWith("Items/"))
             {
-                // Deserialize into Dictionary
-                var db = JsonSerializer.Deserialize<Dictionary<int, ItemData>>(File.ReadAllText(fullPath));
-                if (db != null)
+                string fullPath = Path.Combine(dataPath, modulePath);
+                if (File.Exists(fullPath))
                 {
-                    foreach (var kvp in db) tempDict[kvp.Key] = kvp.Value;
+                    var db = JsonSerializer.Deserialize<Dictionary<int, ItemData>>(File.ReadAllText(fullPath));
+                    if (db != null)
+                    {
+                        foreach (var kvp in db) tempDict[kvp.Key] = kvp.Value;
+                    }
                 }
             }
         }
-    }
 
-    // 2. Final conversion with safety bounds checking
-    var masterArray = new ItemData[EngineConfig.MaxItemCapacity]; 
-    foreach (var kvp in tempDict)
-    {
-        if (kvp.Key >= 0 && kvp.Key < masterArray.Length)
+        var masterArray = new ItemData[EngineConfig.MaxItemCapacity]; 
+        foreach (var kvp in tempDict)
         {
-            masterArray[kvp.Key] = kvp.Value;
+            if (kvp.Key >= 0 && kvp.Key < masterArray.Length)
+            {
+                masterArray[kvp.Key] = kvp.Value;
+            }
         }
-        else
-        {
-            // You can use DebugLog or GD.PrintErr depending on the class
-            DebugLog.Log($"[WARNING] Item ID {kvp.Key} exceeds MaxItemCapacity!");
-        }
+        return masterArray;
     }
-
-    return masterArray;
-}
-
-    // --- Standard Godot Methods ---
 
     public override void _Process(double delta) => _driver?.Tick((float)delta);
 
@@ -112,6 +121,3 @@ private ItemData[] LoadItemDatabaseFromManifest(Manifest manifest, string dataPa
         return Path.Combine(repoRoot, "Source", "Data");
     }
 }
-
-// Data structures for manifest loading
-public record Manifest(List<string> ConfigModules);

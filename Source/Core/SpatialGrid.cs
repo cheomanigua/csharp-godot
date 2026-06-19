@@ -41,7 +41,11 @@ public class SpatialGrid
 
     public void Add(int entityId, Vector2 position)
     {
-        long key = GetKey(position);
+        // Divide position by CellSize FIRST, then hash the resulting integers
+        int ix = (int)(position.X / CellSize);
+        int iy = (int)(position.Y / CellSize);
+        long key = GetKeyFromCoords(ix, iy);
+        
         DebugLog.Log($"Adding Entity {entityId} to key {key} at {position}");
         if (!_grid.TryGetValue(key, out var list))
         {
@@ -100,7 +104,16 @@ public class SpatialGrid
         return foundCount;
     }
 
-    private long GetKeyFromCoords(int x, int y) => ((long)x << 32) | (uint)y;
+    private const int GridOffset = 10000; // Choose a value larger than your world size
+
+    private long GetKeyFromCoords(int x, int y) 
+    {
+        // Shift coordinates into positive space, then hash
+        //uint ux = (uint)(x + GridOffset);
+        //uint uy = (uint)(y + GridOffset);
+        //return ((long)ux << 32) | uy;
+        return (long)(x + GridOffset) * 31337 + (long)(y + GridOffset);
+    }
     private long GetKey(Vector2 pos) => GetKeyFromCoords((int)(pos.X / CellSize), (int)(pos.Y / CellSize));
 
 }

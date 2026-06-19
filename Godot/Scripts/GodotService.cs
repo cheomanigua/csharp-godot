@@ -32,6 +32,7 @@ public class GodotService : IEngineFacade, IGameView
 
 public void DrawMesh(int id, Source.Core.Math.Transform2D transform) 
 {
+	GD.Print($"[DEBUG] DrawMesh Received ID {id} at {transform.Origin.X}, {transform.Origin.Y}");
 #if GODOT
 	if (id < 0 || id >= _entityToRid.Length) return;
 
