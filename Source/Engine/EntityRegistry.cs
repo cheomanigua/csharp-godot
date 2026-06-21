@@ -11,7 +11,7 @@ namespace Source.Engine;
 public class EntityRegistry
 {
 	private readonly ItemData[] _itemDatabase;
-	private unsafe readonly EntityHotData[] _hotData = new EntityHotData[EngineConfig.MaxEntities];
+	private unsafe readonly EntityStats[] _stats = new EntityStats[EngineConfig.MaxEntities];
 	private readonly TagGrid _tagGrid = new(EngineConfig.MaxEntities);
 	private readonly int[] _activeEntities = new int[EngineConfig.MaxEntities];
 	private int _activeCount = 0;
@@ -39,16 +39,16 @@ public class EntityRegistry
 	/// <summary>
 	/// Main accessor - Pure AoS for best cache locality with 5000+ NPCs
 	/// </summary>
-	public ref EntityHotData GetHotData(int entityId) => ref _hotData[entityId];
+	public ref EntityStats GetStats(int entityId) => ref _stats[entityId];
 
-	internal unsafe void RegisterStats(int entityId, in EntityHotData data)
+	internal unsafe void RegisterStats(int entityId, in EntityStats data)
 	{
 		if (entityId == 0) 
     {
         System.Console.WriteLine($"[GHOST TRAP] Ghost entity 0 registered! Stack: {System.Environment.StackTrace}");
         System.Console.Out.Flush();
     }
-		_hotData[entityId] = data;
+		_stats[entityId] = data;
 		_tagGrid.AddComponent(entityId, ComponentMask.Stats);
 		_activeEntities[_activeCount++] = entityId;
 	}
@@ -61,7 +61,7 @@ public class EntityRegistry
 			return; 
 		}
 
-		ref var data = ref _hotData[entityId];
+		ref var data = ref _stats[entityId];
 		data.AddEquippedItem(itemId);
 	}
 
@@ -70,7 +70,7 @@ public class EntityRegistry
 		for (int i = 0; i < _activeCount; i++)
 		{
 			int eid = _activeEntities[i];
-			ref var data = ref _hotData[eid];
+			ref var data = ref _stats[eid];
 
 			if (!data.IsDirty) continue;
 

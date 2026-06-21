@@ -5,7 +5,7 @@ namespace Source.Core;
 
 
 [StructLayout(LayoutKind.Sequential, Pack = 4)]
-public unsafe struct EntityHotData
+public unsafe struct EntityStats
 {
     public int EntityId;
     public bool IsDirty;
@@ -15,7 +15,7 @@ public unsafe struct EntityHotData
     public int EquippedItemCount;
     public fixed int EquippedItemIds[8];
 
-    public EntityHotData(int entityId)
+    public EntityStats(int entityId)
     {
         EntityId = entityId;
         IsDirty = true;

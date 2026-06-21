@@ -27,7 +27,7 @@ public static class FormulaProcessor
 		}
 	}
 
-	public static unsafe float Execute(string formulaName, in EntityHotData stats, int weaponDmg)
+	public static unsafe float Execute(string formulaName, in EntityStats stats, int weaponDmg)
   {
       if (!_rawFormulas.TryGetValue(formulaName, out var formula))
           return weaponDmg;
@@ -55,7 +55,7 @@ public static class FormulaProcessor
   }
 
 
-	public static unsafe void ExecuteUpdate(string formulaName, ref EntityHotData stats, FormulaContext ctx)
+	public static unsafe void ExecuteUpdate(string formulaName, ref EntityStats stats, FormulaContext ctx)
 	{
 	    if (!_rawFormulas.TryGetValue(formulaName, out var formula)) return;
 	
@@ -81,7 +81,7 @@ public static class FormulaProcessor
 	}
 
 
-	public static unsafe void RecalculateStats(ref EntityHotData stats, FormulaContext ctx)
+	public static unsafe void RecalculateStats(ref EntityStats stats, FormulaContext ctx)
 	{
 		for (int i = 0; i < (int)StatType.Count; i++)
 			stats.Stats[i] = 0;
@@ -89,7 +89,7 @@ public static class FormulaProcessor
 		ExecuteUpdate("UpdateStats", ref stats, ctx);
 	}
 
-	private static unsafe float ResolveSource(string source, EntityHotData stats, FormulaContext ctx)
+	private static unsafe float ResolveSource(string source, EntityStats stats, FormulaContext ctx)
 	{
 		var classProp = ctx.Class?.GetType().GetProperty(source);
 		if (classProp != null) return Convert.ToSingle(classProp.GetValue(ctx.Class));

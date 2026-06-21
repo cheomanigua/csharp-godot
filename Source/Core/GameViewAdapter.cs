@@ -17,17 +17,17 @@ public class GameViewAdapter
 
     public unsafe void UpdateView(int entityId, IGameView view)
     {
-        ref var hotData = ref _registry.GetHotData(entityId);
+        ref var stats = ref _registry.GetStats(entityId);
         ref readonly var meta = ref _meta.Get(entityId);
         
         var dto = new CharacterSheetDto(
             meta.Name,
             meta.WeaponName,
             meta.SkillName,
-            hotData.Stats[(int)StatType.Health],
-            hotData.Stats[(int)StatType.Mana],
-            hotData.Stats[(int)StatType.Strength],
-            hotData.Stats[(int)StatType.Intelligence]
+            stats.Stats[(int)StatType.Health],
+            stats.Stats[(int)StatType.Mana],
+            stats.Stats[(int)StatType.Strength],
+            stats.Stats[(int)StatType.Intelligence]
         );
         
         view.Render(in dto);

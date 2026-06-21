@@ -18,7 +18,7 @@ public class CombatSystem
 	{
 		if (!_actionMappings.TryGetValue(actionName, out string? formulaName) || formulaName == null) return;
 
-		ref var attackerStats = ref registry.GetHotData(attackerId);
+		ref var attackerStats = ref registry.GetStats(attackerId);
 
 		var context = new FormulaContext(attackerStats); 
 

@@ -149,13 +149,13 @@ namespace Source.Engine
         
             // 2. State & Component Registration
             // Initialize with a fresh HotData object.
-            var hotData = new EntityHotData(id);
+            var stats = new EntityStats(id);
             
             // CRITICAL FIX: Mark as dirty so your ProcessCombat/Stats systems 
             // recognize this entity needs its stats/bonuses recalculated.
-            hotData.IsDirty = true; 
+            stats.IsDirty = true; 
             
-            _registry.RegisterStats(id, in hotData);
+            _registry.RegisterStats(id, in stats);
             
             // 3. Spawning Logic
             Vector2 spawnPos = dto.SpawnPosition; 

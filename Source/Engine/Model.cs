@@ -10,7 +10,7 @@ namespace Source.Engine
 
 	// --- 2. Context for FormulaProcessor ---
 	public record FormulaContext(
-		EntityHotData Stats, 
+		EntityStats Stats, 
 		ClassData? Class = null, 
 		RaceData? Race = null, 
 		int WeaponDamage = 0,

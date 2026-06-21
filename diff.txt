@@ -28,7 +28,7 @@ diff --git a/Source/Core/Components.cs b/Source/Core/Components.cs
 index 38ea111..754f207 100644
 --- a/Source/Core/Components.cs
 +++ b/Source/Core/Components.cs
-@@ -33,6 +33,13 @@ public unsafe struct EntityHotData
+@@ -33,6 +33,13 @@ public unsafe struct EntityStats
      }
  }
  

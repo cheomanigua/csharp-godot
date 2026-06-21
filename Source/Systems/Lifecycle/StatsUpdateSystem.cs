@@ -14,11 +14,11 @@ public class StatsUpdateSystem
         if (!classes.TryGetValue(bp.Class, out var classData)) return;
         if (!races.TryGetValue(bp.Race, out var race)) return;
     
-        ref var hotData = ref registry.GetHotData(bp.EntityId);
+        ref var stats = ref registry.GetStats(bp.EntityId);
         
-        var context = new FormulaContext(hotData, classData, race);
+        var context = new FormulaContext(stats, classData, race);
 
-        FormulaProcessor.RecalculateStats(ref hotData, context);
-        DebugLog.Log($"DEBUG: After Init, Health is {hotData.Stats[(int)StatType.Health]}");
+        FormulaProcessor.RecalculateStats(ref stats, context);
+        DebugLog.Log($"DEBUG: After Init, Health is {stats.Stats[(int)StatType.Health]}");
     }
 }
