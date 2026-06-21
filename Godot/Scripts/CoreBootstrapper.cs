@@ -45,6 +45,7 @@ public partial class CoreBootstrapper : Node
             // 7. Manually assign commands using dynamic IDs to match Program.cs simulation
             if (entityMap.TryGetValue("Thrall", out int thrallId))
             {
+                _driver.SetPlayerId(thrallId);
                 _driver.AddCommand(new GameCommand { 
                     Type = CommandType.Move, 
                     EntityId = thrallId, 

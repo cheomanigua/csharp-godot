@@ -33,6 +33,13 @@ public unsafe struct EntityHotData
     }
 }
 
+[StructLayout(LayoutKind.Sequential, Pack = 4)]
+public struct PlayerControlledComponent 
+{
+    public int EntityId;
+    public bool IsActive;
+}
+
 [StructLayout(LayoutKind.Explicit, Size = 12)]
 public struct WeaponComponent
 {

@@ -1,0 +1,514 @@
+diff --git a/Godot/Scripts/CoreBootstrapper.cs b/Godot/Scripts/CoreBootstrapper.cs
+index 0ef5de9..f630bbf 100644
+--- a/Godot/Scripts/CoreBootstrapper.cs
++++ b/Godot/Scripts/CoreBootstrapper.cs
+@@ -45,6 +45,7 @@ public partial class CoreBootstrapper : Node
+             // 7. Manually assign commands using dynamic IDs to match Program.cs simulation
+             if (entityMap.TryGetValue("Thrall", out int thrallId))
+             {
++                _driver.SetPlayerId(thrallId);
+                 _driver.AddCommand(new GameCommand { 
+                     Type = CommandType.Move, 
+                     EntityId = thrallId, 
+diff --git a/Godot/Scripts/GodotService.cs b/Godot/Scripts/GodotService.cs
+index 3f612c5..029dbf3 100644
+--- a/Godot/Scripts/GodotService.cs
++++ b/Godot/Scripts/GodotService.cs
+@@ -45,7 +45,8 @@ public void DrawMesh(int id, Source.Core.Math.Transform2D transform)
+ 
+ 	var rid = _entityToRid[id];
+ 	RenderingServer.CanvasItemClear(rid);
+-	RenderingServer.CanvasItemAddRect(rid, new Rect2(-16, -16, 32, 32), Colors.White);
++	//RenderingServer.CanvasItemAddRect(rid, new Rect2(-16, -16, 32, 32), Colors.White);
++	RenderingServer.CanvasItemAddCircle(rid, Vector2.Zero, 16.0f, Colors.White);
+ 
+ 	// FIX: Use the fully qualified Godot.Transform2D here
+ 	var transform2D = new Godot.Transform2D(
+diff --git a/Source/Core/Components.cs b/Source/Core/Components.cs
+index 38ea111..754f207 100644
+--- a/Source/Core/Components.cs
++++ b/Source/Core/Components.cs
+@@ -33,6 +33,13 @@ public unsafe struct EntityHotData
+     }
+ }
+ 
++[StructLayout(LayoutKind.Sequential, Pack = 4)]
++public struct PlayerControlledComponent 
++{
++    public int EntityId;
++    public bool IsActive;
++}
++
+ [StructLayout(LayoutKind.Explicit, Size = 12)]
+ public struct WeaponComponent
+ {
+diff --git a/Source/Core/ConsoleGameView.cs b/Source/Core/ConsoleGameView.cs
+index bae0791..747d1fd 100644
+--- a/Source/Core/ConsoleGameView.cs
++++ b/Source/Core/ConsoleGameView.cs
+@@ -4,8 +4,10 @@ using Source.Core.Contracts;
+ 
+ namespace Source.Core;
+ 
+-public class ConsoleGameView : IGameView
++public class ConsoleGameView : IEngineFacade, IGameView
+ {
++	public void DrawMesh(int id, Source.Core.Math.Transform2D transform) { }
++	public bool IsActionPressed(string action) => false;
+ 	public void Render(in CharacterSheetDto data)
+ 	{
+ #if GODOT
+diff --git a/Source/Engine/Controller.cs b/Source/Engine/Controller.cs
+index 11adf67..ec74f79 100644
+--- a/Source/Engine/Controller.cs
++++ b/Source/Engine/Controller.cs
+@@ -4,6 +4,7 @@ using System.Collections.Generic;
+ using System.Numerics;
+ using System;
+ using Source.Core;
++using Source.Core.Math;
+ 
+ namespace Source.Engine
+ {
+@@ -165,6 +166,8 @@ namespace Source.Engine
+             {
+                 _moveBuffers.Active[id] = true;
+                 _moveBuffers.Speeds[id] = 215.0f;
++                _moveBuffers.LastPositions[id] = spawnPos;
++                _moveBuffers.Transforms[id] = new Transform2D(spawnPos, 0);
+             }
+         
+             // 4. Metadata Registration
+diff --git a/Source/Engine/EngineDriver.cs b/Source/Engine/EngineDriver.cs
+index 4d0811d..f4562b3 100644
+--- a/Source/Engine/EngineDriver.cs
++++ b/Source/Engine/EngineDriver.cs
+@@ -4,6 +4,7 @@ using Source.Systems.Collision;
+ using Source.Systems.Inventory;
+ using Source.Systems.View;
+ using Source.Systems.Lifecycle;
++using Source.Systems.Input;
+ using Source.Core;
+ using Source.Core.Interfaces;
+ using Source.Core.Commands;
+@@ -20,7 +21,8 @@ public class EngineDriver
+     private readonly EntityRegistry _registry; 
+     private readonly MetadataRegistry _metaRegistry = new();
+     private readonly CommandQueue _queue = new();
+-    private readonly IGameView _view;
++    //private readonly IGameView _view;
++    private readonly IEngineFacade _view;
+     private readonly Controller _controller;
+     private readonly RenderSystem _renderSystem;
+     private readonly StatsUpdateSystem _updateSystem = new();
+@@ -31,7 +33,11 @@ public class EngineDriver
+ 
+     private readonly SpatialGrid _spatialGrid = new();
+ 
+-    public EngineDriver(IGameView view, ItemData[] itemDatabase, string dataDirectory)
++    private int _playerId = -1; // Default to -1 (no player assigned)
++    public void SetPlayerId(int id) => _playerId = id;
++
++
++    public EngineDriver(IEngineFacade view, ItemData[] itemDatabase, string dataDirectory)
+     {
+         _view = view;
+ 
+@@ -48,7 +54,7 @@ public class EngineDriver
+         DebugLog.Log("EngineDriver: Controller initialized");
+         
+         var adapter = new GameViewAdapter(_registry, _metaRegistry);
+-        _renderSystem = new RenderSystem(adapter, view);
++        _renderSystem = new RenderSystem(new GameViewAdapter(_registry, _metaRegistry), (IGameView)view);
+     }
+ 
+ 
+@@ -70,70 +76,79 @@ public class EngineDriver
+ 
+     public void AddCommand(GameCommand cmd) => _queue.Enqueue(cmd);
+ 
+-    public void Tick(float deltaTime)
++		public void Tick(float deltaTime)
++{
++    DebugLog.Log("Tick entered");
++
++    // 0. CAPTURE SAFE POSITIONS: Before anything moves, save where we are.
++    for (int i = 0; i < _moveBuffers.Transforms.Length; i++)
+     {
+-        DebugLog.Log("Tick entered");
+-        while (_queue.HasCommands)
++        if (_moveBuffers.Active[i])
+         {
+-            var cmd = _queue.Dequeue();
++            _moveBuffers.LastPositions[i] = _moveBuffers.Transforms[i].Origin;
++            _moveBuffers.HasLastPosition[i] = true;
++        }
++    }
+ 
+-            switch (cmd.Type)
+-            {
+-                case CommandType.Move:
++    // 1. INPUT PHASE: Sample current frame intent
++    if (_playerId != -1) 
++    {
++        _moveBuffers.Velocities[_playerId] = Vector2.Zero;
++        InputSystem.Update(_view, _moveBuffers.Velocities, _playerId);
++        DebugLog.Log($"DEBUG: Velocity for Player {_playerId} after Input: {_moveBuffers.Velocities[_playerId]}");
++    }
++
++    // 2. COMMAND PROCESSING: Handle external logic
++    while (_queue.HasCommands)
++    {
++        var cmd = _queue.Dequeue();
++        switch (cmd.Type)
++        {
++            case CommandType.Move:
++                if (cmd.PosX >= 0 && cmd.PosY >= 0) 
+                     _moveBuffers.Transforms[cmd.EntityId] = new Source.Core.Math.Transform2D(new Vector2(cmd.PosX, cmd.PosY), 0);
+-                    _moveBuffers.Velocities[cmd.EntityId] = new System.Numerics.Vector2(cmd.VelocityX, cmd.VelocityY);
+-                    _moveBuffers.Speeds[cmd.EntityId] = cmd.Speed;
+-                    break;
+-
+-                case CommandType.UpdateStats:
+-                    var bp = _controller.GetBlueprintById(cmd.EntityId);
+-                    if (bp == null)
+-										{
+-											DebugLog.Log($"[GHOST PROTECTOR] Ignored UpdateStats for invalid ID: {cmd.EntityId}");
+-                      break;
+-										}
+-                    _updateSystem.Update(_registry, _queue, bp, _controller.Classes, _controller.Races);
+-                    break;
+-
+-                case CommandType.EquipItem:
+-                    _equipmentSystem.Execute(_registry, cmd);
+-                    break;
+-            }
++                
++                _moveBuffers.Velocities[cmd.EntityId] = new Vector2(cmd.VelocityX, cmd.VelocityY);
++                _moveBuffers.Speeds[cmd.EntityId] = cmd.Speed;
++                break;
++            // ... (rest of your existing command cases)
+         }
+-				
++    }
+ 
+-        MovementSystem.Update(_moveBuffers.Transforms, _moveBuffers.Velocities, _moveBuffers.Speeds, _moveBuffers.Active, deltaTime);
++    // 3. MOVEMENT PHASE: Apply velocity to positions FIRST to calculate new proposed positions
++    MovementSystem.Update(_moveBuffers.Transforms, _moveBuffers.Velocities, _moveBuffers.Speeds, _moveBuffers.Active, deltaTime);
++    DebugLog.Log("DEBUG: Movement applied. Checking collisions for validation.");
+ 
+-        SpatialGridSystem.Update(_spatialGrid, _moveBuffers.Transforms, _moveBuffers.Active);
++    // 4. SPATIAL & COLLISION PHASE: Validate the move
++    // Run grid update and collision check AFTER movement so we can detect overlaps
++    SpatialGridSystem.Update(_spatialGrid, _moveBuffers.Transforms, _moveBuffers.Active);
++    CollisionSystem.Update(_spatialGrid, _moveBuffers.Transforms, _moveBuffers.LastPositions, _moveBuffers.HasLastPosition, _moveBuffers.Velocities, deltaTime, _moveBuffers.Active, _playerId);
+ 
+-        CollisionSystem.Update(_spatialGrid, _moveBuffers.Transforms, _moveBuffers.Velocities, deltaTime, _moveBuffers.Active);
++    if (_playerId >= 0 && _playerId < _moveBuffers.Velocities.Length)
++    {
++        DebugLog.Log($"DEBUG: Velocity for Player {_playerId} after Collision Validation: {_moveBuffers.Velocities[_playerId]}");
++    }
++    else
++    {
++        DebugLog.Log($"DEBUG: No valid player ID ({_playerId}) to log velocity.");
++    }
+ 
+-        _registry.ProcessCombat();
+-        ReadOnlySpan<int> activeSpan = _registry.InternalActiveEntities.AsSpan(0, _registry.InternalActiveCount);
+-        _renderSystem.Update(activeSpan, _registry);
+-        _queue.Clear();
++    // 5. RENDER & POST-PROCESSING
++    _registry.ProcessCombat();
++    var activeSpan = _registry.InternalActiveEntities.AsSpan(0, _registry.InternalActiveCount);
++    _renderSystem.Update(activeSpan, _registry);
++    _queue.Clear();
+ 
+-        DebugLog.Log($"Tick running! Movement system updated.");
+-
+-        // Fixed: Use DebugLog so it prints in Godot's Output panel
+-        // Use the injected _view to handle rendering updates
+-        for (int i = 0; i < _moveBuffers.Active.Length; i++) 
++    // Debug output
++    for (int i = 0; i < _moveBuffers.Active.Length; i++) 
++    {
++        if (_moveBuffers.Active[i]) 
+         {
+-            if (_moveBuffers.Active[i]) 
+-            {
+-                // 1. Keep your requested debug log
+-                DebugLog.Log($"Entity {i} Position: {_moveBuffers.Transforms[i].Origin}");
+-                
+-                // 2. Perform the drawing using the injected view via the interface
+-                if (_view is IEngineFacade facade) 
+-                {
+-                    facade.DrawMesh(i, _moveBuffers.Transforms[i]);
+-                }
+-                else 
+-                {
+-                    DebugLog.Log($"[ERROR] View does not implement IEngineFacade!");
+-                }
+-            }
++            if (_view is IEngineFacade facade) 
++                facade.DrawMesh(i, _moveBuffers.Transforms[i]);
+         }
+     }
+ }
++    
++
++}
+diff --git a/Source/Engine/MovementBuffers.cs b/Source/Engine/MovementBuffers.cs
+index 4537b30..069b7f0 100644
+--- a/Source/Engine/MovementBuffers.cs
++++ b/Source/Engine/MovementBuffers.cs
+@@ -8,6 +8,8 @@ public class MovementBuffers
+     // The SoA (Structure of Arrays) buffers
+     public Transform2D[] Transforms = new Transform2D[EngineConfig.MaxEntities];
+     public Vector2[] Velocities = new Vector2[EngineConfig.MaxEntities];
++    public Vector2[] LastPositions = new Vector2[EngineConfig.MaxEntities];
+     public float[] Speeds = new float[EngineConfig.MaxEntities];
+     public bool[] Active = new bool[EngineConfig.MaxEntities];
++    public bool[] HasLastPosition = new bool[EngineConfig.MaxEntities];
+ }
+diff --git a/Source/Systems/Collision/CollisionSystem.cs b/Source/Systems/Collision/CollisionSystem.cs
+index f306247..3835300 100644
+--- a/Source/Systems/Collision/CollisionSystem.cs
++++ b/Source/Systems/Collision/CollisionSystem.cs
+@@ -1,69 +1,101 @@
+ using System;
+-using System.Collections.Generic;
+ using System.Numerics;
+ using System.Buffers;
+ using Source.Core;
+ using Source.Core.Math;
++using Source.Engine;
+ 
+ namespace Source.Systems.Collision;
+ 
++/// <summary>
++/// Handles spatial collision detection and resolution.
++/// Optimized with defensive checks to prevent crashes during initialization.
++/// </summary>
+ public static class CollisionSystem
+ {
+-    // Collision radius for each NPC.
+-    // Adjust to match your sprite size.
+     private const float Radius = 16.0f;
+-    private const float Diameter = Radius * 2.0f;
+-    private const float DiameterSquared = Diameter * Diameter;
++    private const float DiameterSquared = (Radius * 2.0f) * (Radius * 2.0f);
+ 
+-		public static void Update(
+-			SpatialGrid grid,
+-			Span<Transform2D> transforms,
+-			Span<Vector2> velocities,
+-			float deltaTime,
+-			ReadOnlySpan<bool> activeMask)
+-		{
+-        // 1. Rent an array from the pool
+-        int[] buffer = ArrayPool<int>.Shared.Rent(1024);
++    public static void Update(
++        SpatialGrid grid,
++        Span<Transform2D> transforms,
++        ReadOnlySpan<Vector2> lastPositions,
++        ReadOnlySpan<bool> hasLastPosition,
++        Span<Vector2> velocities,
++        float deltaTime,
++        ReadOnlySpan<bool> activeMask,
++				int playerId)
++    {
++        // DIAGNOSTIC: Monitor buffer health. If LastPos length is 0, we now handle it gracefully below.
++        Console.WriteLine($"[DIAGNOSTIC] Sizes -> Trans: {transforms.Length}, LastPos: {lastPositions.Length}, Vel: {velocities.Length}");
++
++        int[] buffer = ArrayPool<int>.Shared.Rent(EngineConfig.MaxEntities);
+         try
+-				{
+-					// Create a Span from the rented array to work with it safely
++        {
+             Span<int> nearbySpan = buffer.AsSpan();
+ 
+             for (int i = 0; i < transforms.Length; i++)
+             {
++                // Validate index against the transforms buffer (the primary source of truth)
++                if (i >= transforms.Length) continue;
++                
++                // Only process active entities
+                 if (!activeMask[i]) continue;
+ 
+                 nearbySpan.Clear();
+-
+                 int count = grid.GetNearbyEntities(transforms[i].Origin, buffer);
+ 
+                 for (int n = 0; n < count; n++)
+                 {
+                     int j = nearbySpan[n];
+ 
+-
+-                    // Resolve pair only once
+-                    if (j <= i) continue;
+-
++                    // Safety guard for grid results
++                    if (j < 0 || j >= EngineConfig.MaxEntities) continue;
++                    if (j <= i) continue; 
+                     if (!activeMask[j]) continue;
+ 
+-                    Vector2 posA = transforms[i].Origin + velocities[i] * deltaTime;
+-                    Vector2 posB = transforms[j].Origin + velocities[j] * deltaTime;
++                    // Calculate both Current and Predicted squared distances
++                    // 3. Collision Detection: Trigger if CURRENT state overlaps (Validation)
++                    // We check the positions AFTER the movement system has applied velocity.
++                    float distCurrentSq = Vector2.DistanceSquared(transforms[i].Origin, transforms[j].Origin);
+                     
+-                    // If the FUTURE positions overlap, cancel the movement
+-                    if (Vector2.DistanceSquared(posA, posB) < DiameterSquared)
++                    if (distCurrentSq < DiameterSquared)
+                     {
+-                        // Cancel velocity for both
+-                        velocities[i] = Vector2.Zero;
+-                        velocities[j] = Vector2.Zero;
++                        Console.WriteLine($"COLLISION DETECTED! CurrentSq: {distCurrentSq} (Overlap) for {i} and {j}");
++                    
++                        // 4. REVERT POSITION: Revert to the last safe known position
++                        // Only revert if the buffer is actually populated and ID is within bounds
++                        if (i < hasLastPosition.Length && hasLastPosition[i])
++                        {
++                            transforms[i].Origin = lastPositions[i];
++                        }
++                    
++                        if (j < hasLastPosition.Length && hasLastPosition[j]) 
++                        {
++                            transforms[j].Origin = lastPositions[j];
++                        }
++                    
++                        // 5. CONDITIONAL VELOCITY RESET:
++                        // Only stop the entity if it is NOT the player.
++                        
++                        // Stop entity i if it is NOT the player
++                        if (i != playerId) 
++                        {
++                            if (i < velocities.Length) velocities[i] = Vector2.Zero;
++                        }
++                        
++                        // Stop entity j if it is NOT the player
++                        if (j != playerId) 
++                        {
++                            if (j < velocities.Length) velocities[j] = Vector2.Zero;
++                        }
+                     }
+                 }
+             }
+-				}
+-				finally
+-				{
+-					// 3. IMPORTANT: Always return the buffer to the pool
++        }
++        finally
++        {
+             ArrayPool<int>.Shared.Return(buffer);
+-				}
+-		}
++        }
++    }
+ }
+diff --git a/Source/Tests/CollisionTest.cs b/Source/Tests/CollisionTest.cs
+index ef7bc8b..5182fdc 100644
+--- a/Source/Tests/CollisionTest.cs
++++ b/Source/Tests/CollisionTest.cs
+@@ -19,12 +19,16 @@ public class CollisionTest
+         var velocityArray = new Vector2[maxEntities];
+         var speedArray = new float[maxEntities];
+         var activeArray = new bool[maxEntities];
++        var lastPositionArray = new Vector2[maxEntities];
++        var hasLastPositionArray = new bool[maxEntities];
+ 
+         // 2. Create Spans for the systems
+         Span<Transform2D> transforms = transformArray.AsSpan();
+         Span<Vector2> velocities = velocityArray.AsSpan();
+         Span<float> speeds = speedArray.AsSpan();
+         Span<bool> active = activeArray.AsSpan();
++        Span<Vector2> lastPositions = lastPositionArray.AsSpan();
++        Span<bool> hasLastPosition = hasLastPositionArray.AsSpan();
+ 
+         // 3. Use IDProvider to get dynamic IDs
+         var idProvider = new IDProvider();
+@@ -62,7 +66,7 @@ public class CollisionTest
+         {
+             MovementSystem.Update(transforms, velocities, speeds, active, deltaTime);
+             SpatialGridSystem.Update(spatialGrid, transforms, active);
+-            CollisionSystem.Update(spatialGrid, transforms, velocities, deltaTime, active);
++            CollisionSystem.Update(spatialGrid, transforms, lastPositions, hasLastPosition, velocities, deltaTime, active, -1);
+ 
+             // 2. Updated Log to show both velocities
+             Console.WriteLine($"{frame,-5:D2} | " +
+diff --git a/tree.txt b/tree.txt
+index f0de288..fc08a37 100644
+--- a/tree.txt
++++ b/tree.txt
+@@ -1,6 +1,7 @@
+ .
+ ├── clean.sh
+ ├── deletebinlog.sh
++├── diff.txt
+ ├── Godot
+ │   ├── DataDriven.csproj
+ │   ├── DataDriven.sln
+@@ -60,6 +61,7 @@
+ │   │   ├── Controller.cs
+ │   │   ├── EngineDriver.cs
+ │   │   ├── EntityRegistry.cs
++│   │   ├── IDProvider.cs
+ │   │   ├── MetadataRegistry.cs
+ │   │   ├── Model.cs
+ │   │   ├── MovementBuffers.cs
+@@ -67,22 +69,26 @@
+ │   ├── Program.cs
+ │   ├── restart.sh
+ │   ├── Source.csproj
+-│   └── Systems
+-│       ├── Collision
+-│       │   └── CollisionSystem.cs
+-│       ├── Combat
+-│       │   └── CombatSystem.cs
+-│       ├── Inventory
+-│       │   └── EquipmentSystem.cs
+-│       ├── Lifecycle
+-│       │   └── StatsUpdateSystem.cs
+-│       ├── Movement
+-│       │   └── MovementSystem.cs
+-│       ├── Spatial
+-│       │   └── SpatialGridSystem.cs
+-│       └── View
+-│           └── RenderSystem.cs
++│   ├── Systems
++│   │   ├── Collision
++│   │   │   └── CollisionSystem.cs
++│   │   ├── Combat
++│   │   │   └── CombatSystem.cs
++│   │   ├── Input
++│   │   │   └── InputSystem.cs
++│   │   ├── Inventory
++│   │   │   └── EquipmentSystem.cs
++│   │   ├── Lifecycle
++│   │   │   └── StatsUpdateSystem.cs
++│   │   ├── Movement
++│   │   │   └── MovementSystem.cs
++│   │   ├── Spatial
++│   │   │   └── SpatialGridSystem.cs
++│   │   └── View
++│   │       └── RenderSystem.cs
++│   └── Tests
++│       └── CollisionTest.cs
+ ├── tree.txt
+ └── troubleshoot.txt
+ 
+-23 directories, 63 files
++25 directories, 67 files
+diff --git a/troubleshoot.txt b/troubleshoot.txt
+index e2e5e69..41742c3 100644
+--- a/troubleshoot.txt
++++ b/troubleshoot.txt
+@@ -24,4 +24,4 @@ DOUBTS
+ 
+ 1. I see that you use Velocity as direction. Should we change Velocity for Direction? Or direction is more related to where you are facing rather to where you are moving?
+ 2. Do the initial position of cmd.Type == CommandType.Move is only processed once at start up?
+-
++3. So, the movement command for npcs is different from the player. The player uses Godot input. When an npc is moving, it kepts moving, it doesn't reset to vertor zero everyframe. Should I keep the current movement command for npcs?

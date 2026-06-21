@@ -4,6 +4,7 @@ using Source.Systems.Collision;
 using Source.Systems.Inventory;
 using Source.Systems.View;
 using Source.Systems.Lifecycle;
+using Source.Systems.Input;
 using Source.Core;
 using Source.Core.Interfaces;
 using Source.Core.Commands;
@@ -20,7 +21,8 @@ public class EngineDriver
     private readonly EntityRegistry _registry; 
     private readonly MetadataRegistry _metaRegistry = new();
     private readonly CommandQueue _queue = new();
-    private readonly IGameView _view;
+    //private readonly IGameView _view;
+    private readonly IEngineFacade _view;
     private readonly Controller _controller;
     private readonly RenderSystem _renderSystem;
     private readonly StatsUpdateSystem _updateSystem = new();
@@ -31,7 +33,11 @@ public class EngineDriver
 
     private readonly SpatialGrid _spatialGrid = new();
 
-    public EngineDriver(IGameView view, ItemData[] itemDatabase, string dataDirectory)
+    private int _playerId = -1; // Default to -1 (no player assigned)
+    public void SetPlayerId(int id) => _playerId = id;
+
+
+    public EngineDriver(IEngineFacade view, ItemData[] itemDatabase, string dataDirectory)
     {
         _view = view;
 
@@ -48,7 +54,7 @@ public class EngineDriver
         DebugLog.Log("EngineDriver: Controller initialized");
         
         var adapter = new GameViewAdapter(_registry, _metaRegistry);
-        _renderSystem = new RenderSystem(adapter, view);
+        _renderSystem = new RenderSystem(new GameViewAdapter(_registry, _metaRegistry), (IGameView)view);
     }
 
 
@@ -70,70 +76,91 @@ public class EngineDriver
 
     public void AddCommand(GameCommand cmd) => _queue.Enqueue(cmd);
 
-    public void Tick(float deltaTime)
+		public void Tick(float deltaTime)
+{
+    DebugLog.Log("Tick entered");
+
+    // 0. CAPTURE SAFE POSITIONS: Before anything moves, save where we are.
+    for (int i = 0; i < _moveBuffers.Transforms.Length; i++)
     {
-        DebugLog.Log("Tick entered");
-        while (_queue.HasCommands)
+        if (_moveBuffers.Active[i])
         {
-            var cmd = _queue.Dequeue();
-
-            switch (cmd.Type)
-            {
-                case CommandType.Move:
-                    _moveBuffers.Transforms[cmd.EntityId] = new Source.Core.Math.Transform2D(new Vector2(cmd.PosX, cmd.PosY), 0);
-                    _moveBuffers.Velocities[cmd.EntityId] = new System.Numerics.Vector2(cmd.VelocityX, cmd.VelocityY);
-                    _moveBuffers.Speeds[cmd.EntityId] = cmd.Speed;
-                    break;
-
-                case CommandType.UpdateStats:
-                    var bp = _controller.GetBlueprintById(cmd.EntityId);
-                    if (bp == null)
-										{
-											DebugLog.Log($"[GHOST PROTECTOR] Ignored UpdateStats for invalid ID: {cmd.EntityId}");
-                      break;
-										}
-                    _updateSystem.Update(_registry, _queue, bp, _controller.Classes, _controller.Races);
-                    break;
-
-                case CommandType.EquipItem:
-                    _equipmentSystem.Execute(_registry, cmd);
-                    break;
-            }
-        }
-				
-
-        MovementSystem.Update(_moveBuffers.Transforms, _moveBuffers.Velocities, _moveBuffers.Speeds, _moveBuffers.Active, deltaTime);
-
-        SpatialGridSystem.Update(_spatialGrid, _moveBuffers.Transforms, _moveBuffers.Active);
-
-        CollisionSystem.Update(_spatialGrid, _moveBuffers.Transforms, _moveBuffers.Velocities, deltaTime, _moveBuffers.Active);
-
-        _registry.ProcessCombat();
-        ReadOnlySpan<int> activeSpan = _registry.InternalActiveEntities.AsSpan(0, _registry.InternalActiveCount);
-        _renderSystem.Update(activeSpan, _registry);
-        _queue.Clear();
-
-        DebugLog.Log($"Tick running! Movement system updated.");
-
-        // Fixed: Use DebugLog so it prints in Godot's Output panel
-        // Use the injected _view to handle rendering updates
-        for (int i = 0; i < _moveBuffers.Active.Length; i++) 
-        {
-            if (_moveBuffers.Active[i]) 
-            {
-                // 1. Keep your requested debug log
-                DebugLog.Log($"Entity {i} Position: {_moveBuffers.Transforms[i].Origin}");
-                
-                // 2. Perform the drawing using the injected view via the interface
-                if (_view is IEngineFacade facade) 
-                {
-                    facade.DrawMesh(i, _moveBuffers.Transforms[i]);
-                }
-                else 
-                {
-                    DebugLog.Log($"[ERROR] View does not implement IEngineFacade!");
-                }
-            }
+            _moveBuffers.LastPositions[i] = _moveBuffers.Transforms[i].Origin;
+            _moveBuffers.HasLastPosition[i] = true;
         }
     }
+
+    // 1. INPUT PHASE: Sample current frame intent
+    if (_playerId != -1) 
+    {
+        _moveBuffers.Velocities[_playerId] = Vector2.Zero;
+        InputSystem.Update(_view, _moveBuffers.Velocities, _playerId);
+        DebugLog.Log($"DEBUG: Velocity for Player {_playerId} after Input: {_moveBuffers.Velocities[_playerId]}");
+    }
+
+    // 2. COMMAND PROCESSING: Handle external logic
+    while (_queue.HasCommands)
+    {
+        var cmd = _queue.Dequeue();
+        switch (cmd.Type)
+        {
+            case CommandType.Move:
+                if (cmd.PosX >= 0 && cmd.PosY >= 0) 
+                    _moveBuffers.Transforms[cmd.EntityId] = new Source.Core.Math.Transform2D(new Vector2(cmd.PosX, cmd.PosY), 0);
+                
+                _moveBuffers.Velocities[cmd.EntityId] = new Vector2(cmd.VelocityX, cmd.VelocityY);
+                _moveBuffers.Speeds[cmd.EntityId] = cmd.Speed;
+                break;
+            case CommandType.UpdateStats:
+                var bp = _controller.GetBlueprintById(cmd.EntityId);
+                if (bp == null)
+								{
+									DebugLog.Log($"[GHOST PROTECTOR] Ignored UpdateStats for invalid ID: {cmd.EntityId}");
+                  break;
+								}
+                _updateSystem.Update(_registry, _queue, bp, _controller.Classes, _controller.Races);
+                break;
+
+            case CommandType.EquipItem:
+                _equipmentSystem.Execute(_registry, cmd);
+                break;
+        }
+    }
+
+    // 3. MOVEMENT PHASE: Apply velocity to positions FIRST to calculate new proposed positions
+    MovementSystem.Update(_moveBuffers.Transforms, _moveBuffers.Velocities, _moveBuffers.Speeds, _moveBuffers.Active, deltaTime);
+    DebugLog.Log("DEBUG: Movement applied. Checking collisions for validation.");
+
+    // 4. SPATIAL & COLLISION PHASE: Validate the move
+    // Run grid update and collision check AFTER movement so we can detect overlaps
+    SpatialGridSystem.Update(_spatialGrid, _moveBuffers.Transforms, _moveBuffers.Active);
+    CollisionSystem.Update(_spatialGrid, _moveBuffers.Transforms, _moveBuffers.LastPositions, _moveBuffers.HasLastPosition, _moveBuffers.Velocities, deltaTime, _moveBuffers.Active, _playerId);
+
+    if (_playerId >= 0 && _playerId < _moveBuffers.Velocities.Length)
+    {
+        DebugLog.Log($"DEBUG: Velocity for Player {_playerId} after Collision Validation: {_moveBuffers.Velocities[_playerId]}");
+    }
+    else
+    {
+        DebugLog.Log($"DEBUG: No valid player ID ({_playerId}) to log velocity.");
+    }
+
+    // 5. RENDER & POST-PROCESSING
+    _registry.ProcessCombat();
+    var activeSpan = _registry.InternalActiveEntities.AsSpan(0, _registry.InternalActiveCount);
+    _renderSystem.Update(activeSpan, _registry);
+    _queue.Clear();
+
+    // Debug output
+    for (int i = 0; i < _moveBuffers.Active.Length; i++) 
+    {
+        if (_moveBuffers.Active[i]) 
+        {
+            if (_view is IEngineFacade facade) 
+                facade.DrawMesh(i, _moveBuffers.Transforms[i]);
+        }
+    }
+}
+    
+
 }

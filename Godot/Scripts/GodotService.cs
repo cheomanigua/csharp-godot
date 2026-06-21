@@ -45,7 +45,8 @@ public void DrawMesh(int id, Source.Core.Math.Transform2D transform)
 
 	var rid = _entityToRid[id];
 	RenderingServer.CanvasItemClear(rid);
-	RenderingServer.CanvasItemAddRect(rid, new Rect2(-16, -16, 32, 32), Colors.White);
+	//RenderingServer.CanvasItemAddRect(rid, new Rect2(-16, -16, 32, 32), Colors.White);
+	RenderingServer.CanvasItemAddCircle(rid, Vector2.Zero, 16.0f, Colors.White);
 
 	// FIX: Use the fully qualified Godot.Transform2D here
 	var transform2D = new Godot.Transform2D(

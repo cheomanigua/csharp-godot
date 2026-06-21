@@ -24,4 +24,4 @@ DOUBTS
 
 1. I see that you use Velocity as direction. Should we change Velocity for Direction? Or direction is more related to where you are facing rather to where you are moving?
 2. Do the initial position of cmd.Type == CommandType.Move is only processed once at start up?
-
+3. So, the movement command for npcs is different from the player. The player uses Godot input. When an npc is moving, it kepts moving, it doesn't reset to vertor zero everyframe. Should I keep the current movement command for npcs?

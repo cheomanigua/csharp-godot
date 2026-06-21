@@ -19,12 +19,16 @@ public class CollisionTest
         var velocityArray = new Vector2[maxEntities];
         var speedArray = new float[maxEntities];
         var activeArray = new bool[maxEntities];
+        var lastPositionArray = new Vector2[maxEntities];
+        var hasLastPositionArray = new bool[maxEntities];
 
         // 2. Create Spans for the systems
         Span<Transform2D> transforms = transformArray.AsSpan();
         Span<Vector2> velocities = velocityArray.AsSpan();
         Span<float> speeds = speedArray.AsSpan();
         Span<bool> active = activeArray.AsSpan();
+        Span<Vector2> lastPositions = lastPositionArray.AsSpan();
+        Span<bool> hasLastPosition = hasLastPositionArray.AsSpan();
 
         // 3. Use IDProvider to get dynamic IDs
         var idProvider = new IDProvider();
@@ -62,7 +66,7 @@ public class CollisionTest
         {
             MovementSystem.Update(transforms, velocities, speeds, active, deltaTime);
             SpatialGridSystem.Update(spatialGrid, transforms, active);
-            CollisionSystem.Update(spatialGrid, transforms, velocities, deltaTime, active);
+            CollisionSystem.Update(spatialGrid, transforms, lastPositions, hasLastPosition, velocities, deltaTime, active, -1);
 
             // 2. Updated Log to show both velocities
             Console.WriteLine($"{frame,-5:D2} | " +

@@ -4,8 +4,10 @@ using Source.Core.Contracts;
 
 namespace Source.Core;
 
-public class ConsoleGameView : IGameView
+public class ConsoleGameView : IEngineFacade, IGameView
 {
+	public void DrawMesh(int id, Source.Core.Math.Transform2D transform) { }
+	public bool IsActionPressed(string action) => false;
 	public void Render(in CharacterSheetDto data)
 	{
 #if GODOT

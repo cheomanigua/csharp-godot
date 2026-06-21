@@ -1,6 +1,7 @@
 .
 ├── clean.sh
 ├── deletebinlog.sh
+├── diff.txt
 ├── Godot
 │   ├── DataDriven.csproj
 │   ├── DataDriven.sln
@@ -60,6 +61,7 @@
 │   │   ├── Controller.cs
 │   │   ├── EngineDriver.cs
 │   │   ├── EntityRegistry.cs
+│   │   ├── IDProvider.cs
 │   │   ├── MetadataRegistry.cs
 │   │   ├── Model.cs
 │   │   ├── MovementBuffers.cs
@@ -67,22 +69,26 @@
 │   ├── Program.cs
 │   ├── restart.sh
 │   ├── Source.csproj
-│   └── Systems
-│       ├── Collision
-│       │   └── CollisionSystem.cs
-│       ├── Combat
-│       │   └── CombatSystem.cs
-│       ├── Inventory
-│       │   └── EquipmentSystem.cs
-│       ├── Lifecycle
-│       │   └── StatsUpdateSystem.cs
-│       ├── Movement
-│       │   └── MovementSystem.cs
-│       ├── Spatial
-│       │   └── SpatialGridSystem.cs
-│       └── View
-│           └── RenderSystem.cs
+│   ├── Systems
+│   │   ├── Collision
+│   │   │   └── CollisionSystem.cs
+│   │   ├── Combat
+│   │   │   └── CombatSystem.cs
+│   │   ├── Input
+│   │   │   └── InputSystem.cs
+│   │   ├── Inventory
+│   │   │   └── EquipmentSystem.cs
+│   │   ├── Lifecycle
+│   │   │   └── StatsUpdateSystem.cs
+│   │   ├── Movement
+│   │   │   └── MovementSystem.cs
+│   │   ├── Spatial
+│   │   │   └── SpatialGridSystem.cs
+│   │   └── View
+│   │       └── RenderSystem.cs
+│   └── Tests
+│       └── CollisionTest.cs
 ├── tree.txt
 └── troubleshoot.txt
 
-23 directories, 63 files
+25 directories, 67 files

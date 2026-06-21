@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Numerics;
 using System;
 using Source.Core;
+using Source.Core.Math;
 
 namespace Source.Engine
 {
@@ -165,6 +166,8 @@ namespace Source.Engine
             {
                 _moveBuffers.Active[id] = true;
                 _moveBuffers.Speeds[id] = 215.0f;
+                _moveBuffers.LastPositions[id] = spawnPos;
+                _moveBuffers.Transforms[id] = new Transform2D(spawnPos, 0);
             }
         
             // 4. Metadata Registration
