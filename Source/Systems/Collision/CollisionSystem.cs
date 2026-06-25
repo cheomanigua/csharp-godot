@@ -8,8 +8,8 @@ using Source.Engine;
 namespace Source.Systems.Collision;
 
 /// <summary>
-/// Handles spatial collision detection and resolution.
-/// Optimized with defensive checks to prevent crashes during initialization.
+/// Handles spatial collision detection and resolution using a pure Spatial Grid (2A approach).
+/// Optimized with proper pair deduplication and early-out checks.
 /// </summary>
 public static class CollisionSystem
 {
@@ -24,70 +24,60 @@ public static class CollisionSystem
         Span<Vector2> velocities,
         float deltaTime,
         ReadOnlySpan<bool> activeMask,
-				int playerId)
+        int playerId)
     {
-        // DIAGNOSTIC: Monitor buffer health. If LastPos length is 0, we now handle it gracefully below.
+        // Optional diagnostic (remove or comment out in production)
         Console.WriteLine($"[DIAGNOSTIC] Sizes -> Trans: {transforms.Length}, LastPos: {lastPositions.Length}, Vel: {velocities.Length}");
 
         int[] buffer = ArrayPool<int>.Shared.Rent(EngineConfig.MaxEntities);
         try
         {
-            Span<int> nearbySpan = buffer.AsSpan();
-
             for (int i = 0; i < transforms.Length; i++)
             {
-                // Validate index against the transforms buffer (the primary source of truth)
-                if (i >= transforms.Length) continue;
-                
-                // Only process active entities
                 if (!activeMask[i]) continue;
 
-                nearbySpan.Clear();
-                int count = grid.GetNearbyEntities(transforms[i].Origin, buffer);
+                int count = grid.GetNearbyEntities(transforms[i].Origin, buffer.AsSpan());
 
                 for (int n = 0; n < count; n++)
                 {
-                    int j = nearbySpan[n];
+                    int j = buffer[n];
 
-                    // Safety guard for grid results
-                    if (j < 0 || j >= EngineConfig.MaxEntities) continue;
-                    if (j <= i) continue; 
+                    // Strong deduplication + safety checks
+                    if (j <= i) continue;                    // Ensures each pair is processed only once
                     if (!activeMask[j]) continue;
 
-                    // Calculate both Current and Predicted squared distances
-                    // 3. Collision Detection: Trigger if CURRENT state overlaps (Validation)
-                    // We check the positions AFTER the movement system has applied velocity.
-                    float distCurrentSq = Vector2.DistanceSquared(transforms[i].Origin, transforms[j].Origin);
-                    
-                    if (distCurrentSq < DiameterSquared)
+                    // Early distance check (fast rejection)
+                    float distSq = Vector2.DistanceSquared(transforms[i].Origin, transforms[j].Origin);
+
+                    // Use CollisionMath helper class for circle-circle collision check
+                    bool colliding = CollisionMath.IsOverlapping(
+                        transforms[i].Origin, Radius,
+                        transforms[j].Origin, Radius);
+
+                    if (colliding)
                     {
-                        Console.WriteLine($"COLLISION DETECTED! CurrentSq: {distCurrentSq} (Overlap) for {i} and {j}");
-                    
-                        // 4. REVERT POSITION: Revert to the last safe known position
-                        // Only revert if the buffer is actually populated and ID is within bounds
+                        Console.WriteLine($"COLLISION DETECTED between {i} and {j} (distSq: {distSq})");
+
+                        // Revert to last known safe positions
                         if (i < hasLastPosition.Length && hasLastPosition[i])
                         {
                             transforms[i].Origin = lastPositions[i];
                         }
-                    
-                        if (j < hasLastPosition.Length && hasLastPosition[j]) 
+
+                        if (j < hasLastPosition.Length && hasLastPosition[j])
                         {
                             transforms[j].Origin = lastPositions[j];
                         }
-                    
-                        // 5. CONDITIONAL VELOCITY RESET:
-                        // Only stop the entity if it is NOT the player.
-                        
-                        // Stop entity i if it is NOT the player
-                        if (i != playerId) 
+
+                        // Stop non-player entities
+                        if (i != playerId && i < velocities.Length)
                         {
-                            if (i < velocities.Length) velocities[i] = Vector2.Zero;
+                            velocities[i] = Vector2.Zero;
                         }
-                        
-                        // Stop entity j if it is NOT the player
-                        if (j != playerId) 
+
+                        if (j != playerId && j < velocities.Length)
                         {
-                            if (j < velocities.Length) velocities[j] = Vector2.Zero;
+                            velocities[j] = Vector2.Zero;
                         }
                     }
                 }

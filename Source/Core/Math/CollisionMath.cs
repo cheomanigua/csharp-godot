@@ -17,14 +17,24 @@ public static class CollisionMath
         return distanceSquared < (radiusSum * radiusSum);
     }
 
-    // AABB Test: Classic overlap check for rectangular bounds
+    // AABB-AABB Test: Classic overlap check for rectangular bounds
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    public static bool IsOverlapping(float minAX, float maxAX, float minAY, float maxAY,
-                                     float minBX, float maxBX, float minBY, float maxBY)
+    public static bool IsOverlapping(Vector2 posA, Vector2 halfSizeA, Vector2 posB, Vector2 halfSizeB)
     {
-        return minAX < maxBX &&
-               maxAX > minBX &&
-               minAY < maxBY &&
-               maxAY > minBY;
+        return
+            MathF.Abs(posA.X - posB.X) < (halfSizeA.X + halfSizeB.X) &&
+            MathF.Abs(posA.Y - posB.Y) < (halfSizeA.Y + halfSizeB.Y);
+    }
+
+    // Circle-AABB Test
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsOverlappingCircleAabb(
+        Vector2 circlePos, float radius,
+        Vector2 boxPos, Vector2 halfSize)
+    {
+        float dx = MathF.Max(MathF.Abs(circlePos.X - boxPos.X) - halfSize.X, 0);
+        float dy = MathF.Max(MathF.Abs(circlePos.Y - boxPos.Y) - halfSize.Y, 0);
+    
+        return dx * dx + dy * dy <= radius * radius;
     }
 }

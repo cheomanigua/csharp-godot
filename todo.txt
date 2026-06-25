@@ -22,6 +22,14 @@ Let me know if you want to look at the code for that movement loop again, or if 
 
 DOUBTS
 
-1. I see that you use Velocity as direction. Should we change Velocity for Direction? Or direction is more related to where you are facing rather to where you are moving?
+1. Collider Mask, see above
 2. Do the initial position of cmd.Type == CommandType.Move is only processed once at start up?
 3. So, the movement command for npcs is different from the player. The player uses Godot input. When an npc is moving, it kepts moving, it doesn't reset to vertor zero everyframe. Should I keep the current movement command for npcs?
+4. focus on implementing one of the "Steering Behaviors" (like Seek or Separate
+5. To handle 5,000 entities effectively, your next priority should be Entity Culling. Even with a grid, you don't need to perform movement logic for entities that are far away from the player or off-screen. Implementing a simple "Active" flag toggle based on distance from the player will allow you to maintain high performance regardless of the total world size.
+
+
+QUESTIONS TO GROK: How to implement the following?
+1. Collision resolution is quite crude (just revert position + zero velocity). This can cause sticking or jitter.
+2. You're using current positions (after movement) instead of swept/continuous collision, which can tunnel at high speeds.
+3. Would you like me to also update it to use the Transform2D.GetBounds() for AABB-based collision (as a future-proof step)?
