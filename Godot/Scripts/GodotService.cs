@@ -12,7 +12,7 @@ namespace DataDriven.Scripts;
 // Implements both interfaces to satisfy EngineDriver and EngineFacade requirements
 public class GodotService : IEngineFacade, IGameView
 {
-	private readonly Rid[] _entityToRid = new Rid[EngineConfig.MaxEntityCapacity];
+	private readonly Rid[] _entityToRid = new Rid[EngineConfig.MaxEntities];
 	private readonly Viewport _viewport;
 
 	public GodotService(Viewport viewport) 

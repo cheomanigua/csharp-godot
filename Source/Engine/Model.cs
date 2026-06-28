@@ -39,7 +39,6 @@ namespace Source.Engine
 	{
 		public const int MaxItemCapacity = 1024;
 		public const int MaxEntities = 1024;
-		public const int MaxEntityCapacity = 1024;
 
 		// Grid settings
     public const int CellSize = 64;
