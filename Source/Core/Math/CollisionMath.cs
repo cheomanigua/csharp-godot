@@ -37,4 +37,16 @@ public static class CollisionMath
     
         return dx * dx + dy * dy <= radius * radius;
     }
+
+    // Point-in-Circle Test: Checks if a point (posA) is within range of a circle center (posB)
+    // Used for radar system in large scaled scenarios, it detects the position of the target, not its shape
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static bool IsPointInCircle(Vector2 posA, Vector2 posB, float radiusB)
+    {
+        float dx = posA.X - posB.X;
+        float dy = posA.Y - posB.Y;
+        float distanceSquared = dx * dx + dy * dy;
+        
+        return distanceSquared < (radiusB * radiusB);
+    }
 }

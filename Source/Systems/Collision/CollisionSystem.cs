@@ -14,6 +14,7 @@ namespace Source.Systems.Collision;
 public static class CollisionSystem
 {
     private const float Radius = 16.0f;
+    private const float RadiusSquared = Radius * Radius;
     private const float DiameterSquared = (Radius * 2.0f) * (Radius * 2.0f);
 
     public static void Update(

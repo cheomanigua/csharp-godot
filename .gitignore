@@ -1,3 +1,7 @@
 .godot/
 **/obj/
 **/bin/
+
+Godot/DataDriven.csproj
+Source/Source.csproj
+Godot/project.godot
